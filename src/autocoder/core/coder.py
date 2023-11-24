@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import os
-from typing import Sequence, Type, Self, Tuple, Set
+from typing import Sequence, Type, Self, Tuple, Set, Any
 from .tests import Tests
 
 
@@ -19,7 +19,7 @@ class Coder(ABC):
 
     def build(
         self,
-        specification: str,
+        specification: Any,
         scaffolded: bool = False,
         project_home: os.PathLike | None = None,
     ) -> Tuple[Set[os.PathLike], Tests]:
@@ -51,14 +51,14 @@ class Coder(ABC):
 
                 subcoder_touched_files, subcoder_tests = subcoder.build(specification=dev_step, scaffolded=True, project_home=project_home)
                 touched_project_files.update(subcoder_touched_files)
-                
+
                 if unit_tests is None:
                     unit_tests = subcoder_tests
                 else:
                     unit_tests += subcoder_tests
         else:  # Base case
             touched_project_files.update(self.code(code_design))
-        
+
         generate_integration_tests = unit_tests is not None  # If there are unit tests, then we need to generate integration tests. Otherwise, we don't.
 
         # Generate first version of the tests
@@ -83,8 +83,8 @@ class Coder(ABC):
             passes_tests, test_results = generated_tests.run()
 
         return touched_project_files | touched_test_files
-    
-    def feedback_hook(self, test_results: str) -> str:
+
+    def feedback_hook(self, test_results: Any) -> str:
         """
         Hook to modify the feedback before refining the code.
 
@@ -94,10 +94,13 @@ class Coder(ABC):
         Returns:
             str: The feedback on the code.
         """
-        return test_results
-    
+        if isinstance(test_results, str):
+            return test_results
+
+        return ""
+
     @abstractmethod
-    def refine(self, specification: str, files: Set[os.PathLike], feedback: str) -> Set[os.PathLike]:
+    def refine(self, specification: Any, files: Set[os.PathLike], feedback: str) -> Set[os.PathLike]:
         """
         Refine the code.
 
@@ -110,7 +113,7 @@ class Coder(ABC):
             Set[os.PathLike]: Paths to the files generated/modified by the coder.
         """
 
-    def generate_tests(self, specification: str, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None, integration: bool = False) -> Tests | None:
+    def generate_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None, integration: bool = False) -> Tests | None:
         """
         Generate the tests. If there are existing tests that already adequately test the code, then this method may return None.
 
@@ -129,7 +132,7 @@ class Coder(ABC):
         return self.generate_unit_tests(specification, files_to_test, existing_test_files)
 
     @abstractmethod
-    def generate_integration_tests(self, specification: str, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None) -> Tests:
+    def generate_integration_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None) -> Tests:
         """
         Generate the integration tests.
 
@@ -141,9 +144,9 @@ class Coder(ABC):
         Returns:
             Tests: The integration tests for the code.
         """
-    
+
     @abstractmethod
-    def generate_unit_tests(self, specification: str, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None) -> Tests:
+    def generate_unit_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None) -> Tests:
         """
         Generate the unit tests.
 
@@ -237,7 +240,7 @@ class Coder(ABC):
         """
 
     @abstractmethod
-    def design_solution(self, specification: str) -> str:
+    def design_solution(self, specification: Any) -> str:
         """
         Design the architecture and logic of the code.
 
