@@ -1,0 +1,22 @@
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[project]
+name = "autocoder"
+version = "0.0.1"
+authors = [
+  { name="Henry Castillo", email="henryandrecastillo@gmail.com" },
+]
+description = "Framework to leverage LLMs for code generation"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+# Homepage = "https://github.com/pypa/sampleproject"
+# Issues = "https://github.com/pypa/sampleproject/issues"
