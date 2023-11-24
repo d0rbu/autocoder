@@ -99,20 +99,6 @@ class Coder(ABC):
 
         return ""
 
-    @abstractmethod
-    def refine(self, specification: Any, files: Set[os.PathLike], feedback: str) -> Set[os.PathLike]:
-        """
-        Refine the code.
-
-        Args:
-            specification (str): The specification of the code to build.
-            files (Set[os.PathLike]): The files to refine.
-            feedback (str): The feedback to use to refine the code.
-
-        Returns:
-            Set[os.PathLike]: Paths to the files generated/modified by the coder.
-        """
-
     def generate_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None, integration: bool = False) -> Tests | None:
         """
         Generate the tests. If there are existing tests that already adequately test the code, then this method may return None.
@@ -130,6 +116,46 @@ class Coder(ABC):
             return self.generate_integration_tests(specification, files_to_test, existing_test_files)
 
         return self.generate_unit_tests(specification, files_to_test, existing_test_files)
+
+    def tests_directory(self, project_home: os.PathLike) -> os.PathLike:
+        """
+        Get the directory where the tests are stored.
+
+        Args:
+            project_home (os.PathLike): The path to the project home.
+
+        Returns:
+            os.PathLike: The path to the tests directory.
+        """
+        return os.path.join(project_home, self.DEFAULT_TESTS_DIR)
+
+
+    @abstractmethod
+    def refine(self, specification: Any, files: Set[os.PathLike], feedback: str) -> Set[os.PathLike]:
+        """
+        Refine the code.
+
+        Args:
+            specification (str): The specification of the code to build.
+            files (Set[os.PathLike]): The files to refine.
+            feedback (str): The feedback to use to refine the code.
+
+        Returns:
+            Set[os.PathLike]: Paths to the files generated/modified by the coder.
+        """
+
+    @abstractmethod
+    def code(self, code_design: str) -> Set[os.PathLike]:
+        """
+        Generate the code.
+
+        Args:
+            code_design (str): The explanation of how the code should be structured and how it should work.
+
+        Returns:
+            Set[os.PathLike]: Paths to the files generated/modified by the coder.
+        """
+
 
     @abstractmethod
     def generate_integration_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None) -> Tests:
@@ -159,29 +185,6 @@ class Coder(ABC):
             Tests: The unit tests for the code.
         """
 
-    def tests_directory(self, project_home: os.PathLike) -> os.PathLike:
-        """
-        Get the directory where the tests are stored.
-
-        Args:
-            project_home (os.PathLike): The path to the project home.
-
-        Returns:
-            os.PathLike: The path to the tests directory.
-        """
-        return os.path.join(project_home, self.DEFAULT_TESTS_DIR)
-
-    @abstractmethod
-    def code(self, code_design: str) -> Set[os.PathLike]:
-        """
-        Generate the code.
-
-        Args:
-            code_design (str): The explanation of how the code should be structured and how it should work.
-
-        Returns:
-            Set[os.PathLike]: Paths to the files generated/modified by the coder.
-        """
 
     @property
     @abstractmethod
