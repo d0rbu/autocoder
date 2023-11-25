@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Tuple, Sequence, Self
+from typing import Tuple, Sequence, Self, Any
 import os
 
 
@@ -56,10 +56,45 @@ class Tests(ABC):
         """
     
     @abstractmethod
-    def run(self) -> Tuple[bool, str]:
+    def run(self) -> Tuple[bool, Any]:
         """
         Run the tests.
 
         Returns:
-            Tuple[bool, str]: Whether the tests passed and the test results.
+            Tuple[bool, Any]: Whether the tests passed and the test results.
         """
+
+
+class NoTests(Tests):
+    """
+    A set of tests that does not contain any tests.
+    """
+    def combine(self, tests: Tests) -> Tests:
+        """
+        Combine another set of tests with these tests.
+
+        Args:
+            tests (Tests): The tests to combine with these tests.
+
+        Returns:
+            Tests: The combined tests.
+        """
+        return tests
+
+    def test_files(self) -> Sequence[os.PathLike]:
+        """
+        Get the files that contain the tests.
+
+        Returns:
+            Sequence[os.PathLike]: The files that contain the tests.
+        """
+        return []
+
+    def run(self) -> Tuple[bool, Any]:
+        """
+        Run the tests.
+
+        Returns:
+            Tuple[bool, Any]: Whether the tests passed and the test results.
+        """
+        return True, ""

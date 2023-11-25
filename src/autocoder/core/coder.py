@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import os
 from typing import Sequence, Type, Self, Tuple, Set, Any
-from .tests import Tests
+from core.tests import Tests, NoTests
 
 
 class Coder(ABC):
@@ -20,7 +20,6 @@ class Coder(ABC):
     def build(
         self,
         specification: Any,
-        scaffolded: bool = False,
         project_home: os.PathLike | None = None,
     ) -> Tuple[Set[os.PathLike], Tests]:
         """
@@ -38,28 +37,24 @@ class Coder(ABC):
 
         code_design = self.design_solution(specification)
 
-        if not scaffolded:
-            touched_project_files.update(self.scaffold(code_design))
+        touched_project_files.update(self.scaffold(code_design))
 
         # Generate first version of the code
-        unit_tests = None
+        unit_tests = NoTests()
         if self.should_generate_dev_plan(code_design):
             dev_plan = self.generate_dev_plan(code_design)
 
             for dev_step in dev_plan:
-                subcoder = self.choose_subcoder(dev_step, self.allowed_subcoders)
+                subcoder = self._choose_subcoder(dev_step, self.allowed_subcoders)
 
-                subcoder_touched_files, subcoder_tests = subcoder.build(specification=dev_step, scaffolded=True, project_home=project_home)
+                subcoder_touched_files, subcoder_tests = subcoder.build(specification=dev_step, project_home=project_home)
                 touched_project_files.update(subcoder_touched_files)
 
-                if unit_tests is None:
-                    unit_tests = subcoder_tests
-                else:
-                    unit_tests += subcoder_tests
+                unit_tests += subcoder_tests
         else:  # Base case
             touched_project_files.update(self.code(code_design))
 
-        generate_integration_tests = unit_tests is not None  # If there are unit tests, then we need to generate integration tests. Otherwise, we don't.
+        generate_integration_tests = isinstance(unit_tests, NoTests)  # If there are unit tests, then we need to generate integration tests. Otherwise, we don't.
 
         # Generate first version of the tests
         # Purposely exclude existing unit tests if there are any, since we want to specifically generate integration tests.
@@ -74,7 +69,7 @@ class Coder(ABC):
             feedback = self.feedback_hook(test_results)
             touched_project_files.update(self.refine(specification, touched_project_files, feedback))
 
-            new_tests = self.generate_tests(specification, touched_project_files, integration=generate_integration_tests, existing_test_files=touched_test_files)
+            new_tests = self.generate_tests(specification, touched_project_files, integration=generate_integration_tests, existing_test_files=touched_test_files, test_results=test_results)
             generated_tests += new_tests
 
             if new_tests is not None:
@@ -99,7 +94,7 @@ class Coder(ABC):
 
         return ""
 
-    def generate_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None, integration: bool = False) -> Tests | None:
+    def generate_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] = set(), integration: bool = False, test_results: Any = None) -> Tests:
         """
         Generate the tests. If there are existing tests that already adequately test the code, then this method may return None.
 
@@ -110,12 +105,12 @@ class Coder(ABC):
             integration (bool, optional): Whether to generate integration tests or unit tests. Defaults to False.
 
         Returns:
-            Tests | None: The tests for the code, if any.
+            Tests: The tests for the code.
         """
         if integration:
-            return self.generate_integration_tests(specification, files_to_test, existing_test_files)
+            return self.generate_integration_tests(specification, files_to_test, existing_test_files, test_results=test_results)
 
-        return self.generate_unit_tests(specification, files_to_test, existing_test_files)
+        return self.generate_unit_tests(specification, files_to_test, existing_test_files, test_results=test_results)
 
     def tests_directory(self, project_home: os.PathLike) -> os.PathLike:
         """
@@ -128,6 +123,22 @@ class Coder(ABC):
             os.PathLike: The path to the tests directory.
         """
         return os.path.join(project_home, self.DEFAULT_TESTS_DIR)
+    
+    def _choose_subcoder(self, task: str, allowed_subcoders: Sequence[Type[Self]]) -> Self:
+        """
+        Choose and return subcoder to delegate a task to.
+
+        Args:
+            task (str): The task to delegate.
+            allowed_subcoders (Sequence[Type[Coder]]): The set of coders to choose from.
+
+        Returns:
+            Coder: The chosen coder.
+        """
+        if len(allowed_subcoders) == 0:
+            raise ValueError("No coders to choose from.")
+        
+        return self.choose_subcoder(task, allowed_subcoders)
 
 
     @abstractmethod
@@ -158,7 +169,7 @@ class Coder(ABC):
 
 
     @abstractmethod
-    def generate_integration_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None) -> Tests:
+    def generate_integration_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] = set(), test_results: Any = None) -> Tests:
         """
         Generate the integration tests.
 
@@ -172,7 +183,7 @@ class Coder(ABC):
         """
 
     @abstractmethod
-    def generate_unit_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None) -> Tests:
+    def generate_unit_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] = set(), test_results: Any = None) -> Tests:
         """
         Generate the unit tests.
 
@@ -200,7 +211,7 @@ class Coder(ABC):
 
         Args:
             task (str): The task to delegate.
-            allowed_subcoders (Sequence[Type[Coder]]): The set of coders to choose from.
+            allowed_subcoders (Sequence[Type[Coder]]): The set of coders to choose from, there's always at least one.
 
         Returns:
             Coder: The chosen coder.
