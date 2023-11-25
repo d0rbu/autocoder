@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import os
-from typing import Sequence, Type, Self, Tuple, Set, Any
-from core.tests import Tests, NoTests
+from typing import Sequence, Type, Self, Tuple, Set, Any, Iterable
+from ..core.tests import Tests, NoTests
 
 
 class Coder(ABC):
@@ -29,7 +29,7 @@ class Coder(ABC):
             specification (str): The specification of the code to build.
 
         Returns:
-            Tuple[Sequence[os.PathLike], Tests]: The paths to the files generated/modified by the coder and the tests.
+            Tuple[Set[os.PathLike], Tests]: The paths to the files generated/modified by the coder and the tests.
         """
         touched_project_files = set()
         touched_test_files = set()
@@ -103,6 +103,7 @@ class Coder(ABC):
             files_to_test (Set[os.PathLike]): The files to test.
             existing_test_files (Set[os.PathLike], optional): The files that already contain tests. Defaults to None.
             integration (bool, optional): Whether to generate integration tests or unit tests. Defaults to False.
+            test_results (Any, optional): The results of the tests. Defaults to None.
 
         Returns:
             Tests: The tests for the code.
@@ -124,13 +125,13 @@ class Coder(ABC):
         """
         return os.path.join(project_home, self.DEFAULT_TESTS_DIR)
     
-    def _choose_subcoder(self, task: str, allowed_subcoders: Sequence[Type[Self]]) -> Self:
+    def _choose_subcoder(self, task: str, allowed_subcoders: Set[Type[Self]]) -> Self:
         """
         Choose and return subcoder to delegate a task to.
 
         Args:
             task (str): The task to delegate.
-            allowed_subcoders (Sequence[Type[Coder]]): The set of coders to choose from.
+            allowed_subcoders (Set[Type[Coder]]): The set of coders to choose from.
 
         Returns:
             Coder: The chosen coder.
@@ -199,19 +200,19 @@ class Coder(ABC):
 
     @property
     @abstractmethod
-    def allowed_subcoders(self) -> Sequence[Type[Self]]:
+    def allowed_subcoders(self) -> Iterable[Type[Self]]:
         """
         The set of coders that can be used to delegate tasks to.
         """
 
     @abstractmethod
-    def choose_subcoder(self, task: str, allowed_subcoders: Sequence[Type[Self]]) -> Self:
+    def choose_subcoder(self, task: str, allowed_subcoders: Iterable[Type[Self]]) -> Self:
         """
         Choose and return subcoder to delegate a task to.
 
         Args:
             task (str): The task to delegate.
-            allowed_subcoders (Sequence[Type[Coder]]): The set of coders to choose from, there's always at least one.
+            allowed_subcoders (Iterable[Type[Coder]]): The set of coders to choose from, there's always at least one.
 
         Returns:
             Coder: The chosen coder.

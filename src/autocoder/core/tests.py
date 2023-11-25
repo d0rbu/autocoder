@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Tuple, Sequence, Self, Any
+from typing import Tuple, Self, Any, Iterable
 import os
 
 
@@ -15,7 +15,6 @@ class Tests(ABC):
 
         Args:
             project_home (os.PathLike | None, optional): The path to the project home. Defaults to None.
-            test_files (Sequence[os.PathLike] | None, optional): The files that contain the tests. Defaults to None.
         """
         self.project_home = project_home
 
@@ -47,12 +46,12 @@ class Tests(ABC):
         """
     
     @abstractmethod
-    def test_files(self) -> Sequence[os.PathLike]:
+    def test_files(self) -> Iterable[os.PathLike]:
         """
         Get the files that contain the tests.
 
         Returns:
-            Sequence[os.PathLike]: The files that contain the tests.
+            Iterable[os.PathLike]: The files that contain the tests.
         """
     
     @abstractmethod
@@ -81,12 +80,12 @@ class NoTests(Tests):
         """
         return tests
 
-    def test_files(self) -> Sequence[os.PathLike]:
+    def test_files(self) -> Iterable[os.PathLike]:
         """
         Get the files that contain the tests.
 
         Returns:
-            Sequence[os.PathLike]: The files that contain the tests.
+            Iterable[os.PathLike]: The files that contain the tests.
         """
         return []
 

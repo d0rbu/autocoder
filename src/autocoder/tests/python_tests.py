@@ -1,9 +1,9 @@
-from core.tests import Tests
-from typing import Sequence, Tuple, Any
+from typing import Sequence, Tuple, Any, Set
 from io import StringIO
 import sys
 import os
 import pytest
+from ..core.tests import Tests
 
 
 class PythonTests(Tests):
@@ -11,24 +11,24 @@ class PythonTests(Tests):
     Representation of Python tests. Uses pytest to run tests.
     """
 
-    def __init__(self, test_files: Sequence[os.PathLike], project_home: os.PathLike | None = None) -> None:
+    def __init__(self, test_files: Set[os.PathLike], project_home: os.PathLike | None = None) -> None:
         super().__init__(project_home)
-        self.main_test_files = set(test_files)
-        self.other_tests = []
+        self.main_test_files = test_files
+        self.other_tests = set()
 
     def combine(self, tests: Tests) -> Tests:
         if isinstance(tests, PythonTests):
             self.main_test_files |= tests.main_test_files
             return self
-        
-        self.other_tests.append(tests)
+
+        self.other_tests.add(tests)
         return self
 
     def test_files(self) -> Sequence[os.PathLike]:
         return [*self.test_files, *[other_test.test_files() for other_test in self.other_tests]]
-    
+
     TEST_RESULT_SEPARATOR = '\n\n'
-    
+
     def run(self) -> Tuple[bool, Any]:
         original_stdout = sys.stdout
 
