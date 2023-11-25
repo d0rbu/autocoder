@@ -6,9 +6,9 @@ build-backend = "pdm.backend"
 name = "autocoder"
 version = "0.0.1"
 authors = [
-  { name="Henry Castillo", email="henryandrecastillo@gmail.com" },
+    { name="Henry Castillo", email="henryandrecastillo@gmail.com" },
 ]
-description = "Framework to leverage LLMs for code generation"
+description = "Framework to leverage LLMs for robust software development"
 readme = "README.md"
 requires-python = ">=3.11"
 classifiers = [
@@ -16,6 +16,8 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+dependencies = []
+license = {text = "Apache-2.0"}
 
 [project.urls]
 # Homepage = "https://github.com/pypa/sampleproject"

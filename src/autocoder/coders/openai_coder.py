@@ -16,7 +16,7 @@ class OpenAICoder(Coder, ABC):
         key: str,
         organization: str | None = None,
         project_home: os.PathLike = os.getcwd(),
-        **default_generate_config: dict[str, Any]
+        **default_generate_config: dict[str, Any],
     ) -> None:
         default_config = self.default_config.copy()
         default_config.update(default_generate_config)
@@ -34,9 +34,23 @@ class OpenAICoder(Coder, ABC):
         """
         return {}
 
+    PATH_CODE_SEPARATOR = "\n\n"
+
     def refine(self, specification: Any, files: Set[os.PathLike], feedback: str) -> Set[os.PathLike]:
+        codebase = self._read_files(files)
+        
         model_input = [
             openai_system_prompt("You are an assistant that takes in a design specification, a codebase, and feedback from running automated tests. You must rewrite the codebase to match the specification and address feedback, if it needs to be rewritten. If you write code, ONLY write the code, no explanations or anything before or after. Previous code written will be shortened to <code>."),
+            openai_assistant_prompt("What is your specification?"),
+            openai_user_prompt(specification),
+            openai_assistant_prompt("What is your codebase?"),
+            *[
+                openai_user_prompt(f"{path}{self.PATH_CODE_SEPARATOR}{code}")
+                for path, code in codebase.items()
+            ],
+            openai_assistant_prompt("What is the feedback from testing?"),
+            openai_user_prompt(feedback),
+            openai_assistant_prompt("Entering code writing mode..."),
         ]
 
         return self._write_code_loop(model_input)
@@ -44,24 +58,26 @@ class OpenAICoder(Coder, ABC):
     def code(self, code_design: str) -> Set[os.PathLike]:
         model_input = [
             openai_system_prompt("You are an coding assistant that takes in a design document and creates code that meets the design document. If you write code, ONLY write the code, no explanations or anything before or after. Previous code written will be shortened to <code>."),
+            openai_assistant_prompt("What is your code design?"),
+            openai_user_prompt(code_design),
+            openai_assistant_prompt("Entering code writing mode..."),
         ]
 
         return self._write_code_loop(model_input, overwrite_files=False)  # Only write new code into new files, don't overwrite existing files.
-
-    PATH_CODE_SEPARATOR = "\n\n"
+    
+    def _read_files(self, files: Set[os.PathLike]) -> str:
+        file_contents = {}
+        for file in files:
+            with open(file, encoding="utf-8") as f:
+                file_contents[file] = f.read()
+        
+        return file_contents
 
     def _generate_tests(self, test_type: Literal["unit", "integration"], specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None) -> Tests:
         existing_test_files = existing_test_files or set()
 
-        codebase = {}
-        for file in files_to_test:
-            with open(file, encoding="utf-8") as f:
-                codebase[file] = f.read()
-        
-        existing_tests = {}
-        for file in existing_test_files:
-            with open(file, encoding="utf-8") as f:
-                existing_tests[file] = f.read()
+        codebase = self._read_files(files_to_test)
+        existing_tests = self._read_files(existing_test_files)
 
         model_input = [
             openai_system_prompt(f"You are an assistant that takes in a design specification, a codebase, and a list of existing {test_type} tests. You must rewrite the existing {test_type} tests to match the specification, if they need to be rewritten. If you write code, ONLY write the code for the {test_type} tests, no explanations or anything before or after. Previous tests written will be shortened to <tests>."),
@@ -77,6 +93,7 @@ class OpenAICoder(Coder, ABC):
                 openai_user_prompt(f"{path}{self.PATH_CODE_SEPARATOR}{code}")
                 for path, code in existing_tests.items()
             ],
+            openai_assistant_prompt("Entering test writing mode..."),
         ]
 
         modified_files = self._write_code_loop(model_input, code_type="tests")
@@ -110,7 +127,7 @@ class OpenAICoder(Coder, ABC):
                         else:
                             model_input.append(openai_assistant_prompt(f"I will write {code_type} in {current_file}:"))
                             modified_files.add(current_file)
-                    elif tool_call.function.name == "finish_writing_code":
+                    elif tool_call.function.name == "finish":
                         finished_writing_code = True
                     else:
                         warn(f"Unknown tool call: {tool_call}")
@@ -160,7 +177,7 @@ class OpenAICoder(Coder, ABC):
         return subcoder_class()
 
     def generate_dev_plan(self, code_design: str, max_tokens: int = 4096) -> Sequence[str]:
-        model_input = openai_system_user_prompt("You are an assistant that takes in a design document and creates a list of action items necessary to complete the task.  Your requirements are:\n1. You must return a JSON list of strings. (e.g. [\"item1\", \"item2\", \"item3\"])\n2. Each item should be clear and concise.", code_design)
+        model_input = openai_system_user_prompt("You are an assistant that takes in a code design and creates a list of action items necessary to complete the task.  Your requirements are:\n1. You must return a JSON list of strings. (e.g. [\"item1\", \"item2\", \"item3\"])\n2. Each item should be clear and concise.", code_design)
 
         response = self.model(messages=model_input, response_format={ "type": "json_object" }, max_tokens=max_tokens)
         return json.loads(response.choices[0].message.content)

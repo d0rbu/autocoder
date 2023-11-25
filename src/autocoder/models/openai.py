@@ -1,6 +1,6 @@
 from typing import Any
-from models.wrapper import ModelWrapper
 from openai import OpenAI
+from .wrapper import ModelWrapper
 
 
 class OpenAIWrapper(ModelWrapper):
@@ -32,7 +32,7 @@ class OpenAIWrapper(ModelWrapper):
         
         self.client = OpenAI(
             organization=organization,
-            apiKey=key,
+            api_key=key,
         )
 
     def generate(

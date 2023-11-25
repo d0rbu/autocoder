@@ -33,11 +33,11 @@ class Coder(ABC):
         """
         touched_project_files = set()
         touched_test_files = set()
-        project_home = project_home or os.getcwd()
+        project_home: os.PathLike = project_home or os.getcwd()
 
         code_design = self.design_solution(specification)
 
-        touched_project_files.update(self.scaffold(code_design))
+        touched_project_files.update(self.scaffold(code_design, project_home))
 
         # Generate first version of the code
         unit_tests = NoTests()
@@ -243,12 +243,13 @@ class Coder(ABC):
         """
 
     @abstractmethod
-    def scaffold(self, code_design: str) -> Set[os.PathLike]:
+    def scaffold(self, code_design: str, project_home: os.PathLike) -> Set[os.PathLike]:
         """
         Generate the project structure and perform setup tasks.
 
         Args:
             code_design (str): The explanation of how the code should be structured and how it should work.
+            project_home (os.PathLike): The path to the project home.
 
         Returns:
             Set[os.PathLike]: Paths to the files generated/modified by the setup process.
