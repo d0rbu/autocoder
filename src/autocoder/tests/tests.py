@@ -31,10 +31,10 @@ class Tests(ABC):
         if tests is None:
             return self
 
-        return self.combine(tests)
+        return self._combine(tests)
 
     @abstractmethod
-    def combine(self, tests: Self) -> Self:
+    def _combine(self, tests: Self) -> Self:
         """
         Combine another set of tests with these tests.
 
@@ -48,14 +48,27 @@ class Tests(ABC):
     @abstractmethod
     def test_files(self) -> Iterable[os.PathLike]:
         """
-        Get the files that contain the tests.
+        Get the files that contain the all the tests.
 
         Returns:
             Iterable[os.PathLike]: The files that contain the tests.
         """
     
-    @abstractmethod
     def run(self) -> Tuple[bool, Any]:
+        """
+        Run the tests.
+
+        Returns:
+            Tuple[bool, Any]: Whether the tests passed and the test results.
+        """
+
+        if len(self.test_files()) == 0:
+            return False, ""
+        
+        return self._run()
+    
+    @abstractmethod
+    def _run(self) -> Tuple[bool, Any]:
         """
         Run the tests.
 
@@ -68,32 +81,11 @@ class NoTests(Tests):
     """
     A set of tests that does not contain any tests.
     """
-    def combine(self, tests: Tests) -> Tests:
-        """
-        Combine another set of tests with these tests.
-
-        Args:
-            tests (Tests): The tests to combine with these tests.
-
-        Returns:
-            Tests: The combined tests.
-        """
+    def _combine(self, tests: Tests) -> Tests:
         return tests
 
     def test_files(self) -> Iterable[os.PathLike]:
-        """
-        Get the files that contain the tests.
-
-        Returns:
-            Iterable[os.PathLike]: The files that contain the tests.
-        """
         return []
 
-    def run(self) -> Tuple[bool, Any]:
-        """
-        Run the tests.
-
-        Returns:
-            Tuple[bool, Any]: Whether the tests passed and the test results.
-        """
-        return True, ""
+    def _run(self) -> Tuple[bool, Any]:
+        return False, ""

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import os
 from typing import Sequence, Type, Self, Tuple, Set, Any, Iterable
-from ..core.tests import Tests, NoTests
+from ..tests.tests import Tests, NoTests
 
 
 class Coder(ABC):

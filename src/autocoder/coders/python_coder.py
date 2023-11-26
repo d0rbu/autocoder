@@ -4,11 +4,11 @@ from warnings import warn
 from pathlib import Path
 from typing import Any, Type, Iterable, Set
 from ordered_set import OrderedSet
-from autocoder.core.tests import Tests
+from .coder import Coder
 from .openai_utils import openai_system_user_prompt, openai_system_prompt, openai_assistant_prompt, openai_user_prompt, openai_tool, openai_finish_tool
 from .openai_coder import OpenAICoder
-from ..core.coder import Coder
 from ..tests.python_tests import PythonTests
+from ..tests.tests import Tests
 
 
 class PythonOpenAICoder(OpenAICoder):

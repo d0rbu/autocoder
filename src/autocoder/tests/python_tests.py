@@ -1,11 +1,8 @@
 import subprocess
 from typing import Sequence, Tuple, Any, Set
-from io import StringIO
 from pathlib import Path
-import sys
 import os
-import pytest
-from ..core.tests import Tests
+from .tests import Tests
 
 
 class PythonTests(Tests):
@@ -19,7 +16,7 @@ class PythonTests(Tests):
         self.other_tests = set()
         self.python_executable = python_executable
 
-    def combine(self, tests: Tests) -> Tests:
+    def _combine(self, tests: Tests) -> Tests:
         if isinstance(tests, PythonTests):
             self.main_test_files |= tests.main_test_files
             return self
@@ -28,12 +25,18 @@ class PythonTests(Tests):
         return self
 
     def test_files(self) -> Sequence[os.PathLike]:
-        return [*self.test_files, *[other_test.test_files() for other_test in self.other_tests]]
+        main_test_files = self._main_test_files()
+        other_test_files = {other_test.test_files() for other_test in self.other_tests}
+        return list(main_test_files | other_test_files)
+    
+    def _main_test_files(self) -> Set[os.PathLike]:
+        return {test_file for test_file in self.main_test_files if os.path.isfile(test_file)}
 
     TEST_RESULT_SEPARATOR = '\n\n'
 
-    def run(self) -> Tuple[bool, Any]:
+    def _run(self) -> Tuple[bool, Any]:
         test_output = subprocess.run([self.python_executable, '-m', 'pytest', *self.main_test_files], capture_output=True, check=False)
+        print(test_output)
 
         other_test_results = [other_test.run() for other_test in self.other_tests]
 

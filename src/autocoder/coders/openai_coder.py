@@ -4,9 +4,9 @@ from warnings import warn
 from typing import Any, Set, Sequence, Type, Iterable, Literal
 from functools import partialmethod
 from abc import ABC, abstractmethod
+from .coder import Coder
 from .openai_utils import openai_system_user_prompt, openai_tool, openai_system_prompt, openai_assistant_prompt, openai_user_prompt, openai_code_writing_tools
-from ..core.coder import Coder
-from ..core.tests import Tests
+from ..tests.tests import Tests
 from ..models.openai import OpenAIWrapper
 
 
