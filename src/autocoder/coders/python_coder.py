@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import Any, Type, Iterable, Set
 from ordered_set import OrderedSet
 from .coder import Coder
+from .openai_coder import OpenAICoder
 from .prompt_utils import system_user_prompt, system_prompt, assistant_prompt, user_prompt, tool, finish_tool
-from .coder import OpenAICoder
 from ..tests.python_tests import PythonTests
 from ..tests.tests import Tests
 

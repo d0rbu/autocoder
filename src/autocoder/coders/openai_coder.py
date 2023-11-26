@@ -2,11 +2,9 @@ import os
 import json
 from warnings import warn
 from typing import Any, Set, Sequence, Type, Iterable, Literal, Mapping
-from functools import partialmethod
-from abc import ABC, abstractmethod
+from abc import ABC
 from .coder import Coder
-from .prompt_utils import system_user_prompt, tool, system_prompt, assistant_prompt, user_prompt, code_writing_tools
-from ..tests.tests import Tests
+from .prompt_utils import system_user_prompt, tool, assistant_prompt, user_prompt, code_writing_tools
 from ..models.openai import OpenAIWrapper
 
 
@@ -38,7 +36,7 @@ class OpenAICoder(Coder, ABC):
         modified_files = set()
         current_file = None
         for _ in range(max_code_files):
-            response = self.model(messages=model_input, tools=code_writing_tools, tool_choice="auto")
+            response = self.model(model_input=model_input, tools=code_writing_tools, tool_choice="auto")
             response_message = response.choices[0].message
             tool_calls = response_message.tool_calls
 
@@ -111,7 +109,7 @@ class OpenAICoder(Coder, ABC):
             )
         ]
 
-        response = self.model(messages=model_input, tools=tools, tool_choice="choose_subcoder")
+        response = self.model(model_input=model_input, tools=tools, tool_choice="choose_subcoder")
 
         subcoder_name = response.choices[0].message.tool_calls[0].function.arguments.get("subcoder")
         subcoder_class = allowed_subcoders[subcoder_name]
@@ -121,7 +119,7 @@ class OpenAICoder(Coder, ABC):
     def generate_dev_plan(self, code_design: str, max_tokens: int = 4096) -> Sequence[str]:
         model_input = system_user_prompt("You are an assistant that takes in a code design and creates a list of action items necessary to complete the task.  Your requirements are:\n1. You must return a JSON list of strings. (e.g. [\"item1\", \"item2\", \"item3\"])\n2. Each item should be clear and concise.", code_design)
 
-        response = self.model(messages=model_input, response_format={ "type": "json_object" }, max_tokens=max_tokens)
+        response = self.model(model_input=model_input, response_format={ "type": "json_object" }, max_tokens=max_tokens)
         return json.loads(response.choices[0].message.content)
 
     def should_generate_dev_plan(self, code_design: str) -> bool:
@@ -144,5 +142,5 @@ class OpenAICoder(Coder, ABC):
             )
         ]
 
-        response = self.model(messages=model_input, tools=tools, tool_choice="set_code_complexity")
+        response = self.model(model_input=model_input, tools=tools, tool_choice="set_code_complexity")
         return response.choices[0].message.tool_calls[0].function.arguments.get("code_is_complex")

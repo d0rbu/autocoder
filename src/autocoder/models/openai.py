@@ -35,13 +35,10 @@ class OpenAIWrapper(ModelWrapper):
 
     def generate(
         self,
+        model_input: Any,
         **kwargs: Any,
     ) -> dict[str, Any]:
-        """
-        Generate text from the given input.
-        """
-        
         generate_config = self.default_generate_config.copy()
         generate_config.update(kwargs)
 
-        return self.client.chat.completions.create(**generate_config)
+        return self.client.chat.completions.create(messages=model_input,**generate_config)

@@ -47,14 +47,16 @@ class ModelWrapper(ABC):
     @abstractmethod
     def generate(
         self,
+        model_input: Any,
         **kwargs,
-    ) -> str:
+    ) -> Any:
         """
         Generate a completion for the given input.
 
         Args:
+            model_input: The input to generate a completion for.
             **kwargs: Keyword arguments to pass to the API.
         
         Returns:
-            str: The generated text.
+            Any: The generated output.
         """

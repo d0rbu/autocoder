@@ -2,7 +2,7 @@ import os
 from abc import ABC, abstractmethod
 from typing import Sequence, Type, Self, Tuple, Set, Any, Iterable, Literal
 from functools import partialmethod
-from .prompt_utils import system_user_prompt, tool, system_prompt, assistant_prompt, user_prompt, code_writing_tools
+from .prompt_utils import system_prompt, assistant_prompt, user_prompt
 from ..tests.tests import Tests, NoTests
 
 
