@@ -26,9 +26,7 @@ class OpenAIWrapper(ModelWrapper):
     }
 
     def __init__(self, key: str, organization: str | None = None, **default_generate_config: dict[str, Any]):
-        self.default_generate_config = self.DEFAULT_CONFIG.copy()
-        if default_generate_config is not None:
-            self.default_generate_config.update(default_generate_config)
+        super().__init__(default_generate_config)
         
         self.client = OpenAI(
             organization=organization,
@@ -43,6 +41,7 @@ class OpenAIWrapper(ModelWrapper):
         Generate text from the given input.
         """
         
-        kwargs.update(self.default_generate_config)
+        generate_config = self.default_generate_config.copy()
+        generate_config.update(kwargs)
 
-        return self.client.chat.completions.create(**kwargs)
+        return self.client.chat.completions.create(**generate_config)

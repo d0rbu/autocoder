@@ -1,7 +1,7 @@
 from typing import Any
 
 
-def openai_system_prompt(system_prompt: str) -> dict[str, str]:
+def system_prompt(system_prompt: str) -> dict[str, str]:
     """Returns a single message that is the system prompt.
 
     Args:
@@ -16,7 +16,7 @@ def openai_system_prompt(system_prompt: str) -> dict[str, str]:
     }
 
 
-def openai_assistant_prompt(assistant_prompt: str) -> dict[str, str]:
+def assistant_prompt(assistant_prompt: str) -> dict[str, str]:
     """Returns a single message that is the assistant prompt.
 
     Args:
@@ -31,7 +31,7 @@ def openai_assistant_prompt(assistant_prompt: str) -> dict[str, str]:
     }
 
 
-def openai_user_prompt(user_prompt: str) -> dict[str, str]:
+def user_prompt(user_prompt: str) -> dict[str, str]:
     """Returns a single message that is the user prompt.
 
     Args:
@@ -46,7 +46,7 @@ def openai_user_prompt(user_prompt: str) -> dict[str, str]:
     }
 
 
-def openai_system_user_prompt(system_prompt: str, user_prompt: str) -> list[dict[str, str]]:
+def system_user_prompt(system_prompt: str, user_prompt: str) -> list[dict[str, str]]:
     """Returns a single list that is the combination of the system prompt and the user prompt.
 
     Args:
@@ -57,12 +57,12 @@ def openai_system_user_prompt(system_prompt: str, user_prompt: str) -> list[dict
         list[dict[str, str]]: A list that is the combination of the system prompt and the user prompt.
     """
     return [
-        openai_system_prompt(system_prompt),
-        openai_user_prompt(user_prompt),
+        system_prompt(system_prompt),
+        user_prompt(user_prompt),
     ]
 
 
-def openai_tool(name: str, description: str, parameters: dict[str, Any]) -> dict[str, Any]:
+def tool(name: str, description: str, parameters: dict[str, Any]) -> dict[str, Any]:
     """Returns a single tool.
 
     Args:
@@ -82,7 +82,7 @@ def openai_tool(name: str, description: str, parameters: dict[str, Any]) -> dict
         }
     }
 
-openai_select_file_tool = openai_tool(
+select_file_tool = tool(
     name="select_file",
     description="Select a file to write tests in. It may be a new file or an existing file.",
     parameters={
@@ -96,7 +96,7 @@ openai_select_file_tool = openai_tool(
     },
 )
 
-openai_finish_tool = openai_tool(
+finish_tool = tool(
     name="finish",
     description="Signal that you are done.",
     parameters={
@@ -105,7 +105,7 @@ openai_finish_tool = openai_tool(
     },
 )
 
-openai_code_writing_tools = [
-    openai_select_file_tool,
-    openai_finish_tool,
+code_writing_tools = [
+    select_file_tool,
+    finish_tool,
 ]

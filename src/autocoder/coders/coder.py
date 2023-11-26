@@ -1,6 +1,8 @@
-from abc import ABC, abstractmethod
 import os
-from typing import Sequence, Type, Self, Tuple, Set, Any, Iterable
+from abc import ABC, abstractmethod
+from typing import Sequence, Type, Self, Tuple, Set, Any, Iterable, Literal
+from functools import partialmethod
+from .prompt_utils import system_user_prompt, tool, system_prompt, assistant_prompt, user_prompt, code_writing_tools
 from ..tests.tests import Tests, NoTests
 
 
@@ -16,6 +18,7 @@ class Coder(ABC):
     """
 
     DEFAULT_TESTS_DIR = "tests"
+    PATH_CODE_SEPARATOR = "\n\n"
 
     def build(
         self,
@@ -45,7 +48,7 @@ class Coder(ABC):
             dev_plan = self.generate_dev_plan(code_design)
 
             for dev_step in dev_plan:
-                subcoder = self._choose_subcoder(dev_step, self.allowed_subcoders)
+                subcoder = self.choose_subcoder(dev_step, self.allowed_subcoders)
 
                 subcoder_touched_files, subcoder_tests = subcoder.build(specification=dev_step, project_home=project_home)
                 touched_project_files.update(subcoder_touched_files)
@@ -54,11 +57,11 @@ class Coder(ABC):
         else:  # Base case
             touched_project_files.update(self.code(code_design))
 
-        generate_integration_tests = isinstance(unit_tests, NoTests)  # If there are unit tests, then we need to generate integration tests. Otherwise, we don't.
+        should_generate_integration_tests = isinstance(unit_tests, NoTests)  # If there are unit tests, then we need to generate integration tests. Otherwise, we don't.
 
         # Generate first version of the tests
         # Purposely exclude existing unit tests if there are any, since we want to specifically generate integration tests.
-        generated_tests = self.generate_tests(specification, touched_project_files, integration=generate_integration_tests)
+        generated_tests = self.generate_tests(specification, touched_project_files, integration=should_generate_integration_tests)
         generated_tests += unit_tests
 
         touched_test_files.update(generated_tests.test_files())
@@ -69,7 +72,7 @@ class Coder(ABC):
             feedback = self.feedback_hook(test_results)
             touched_project_files.update(self.refine(specification, touched_project_files, feedback))
 
-            new_tests = self.generate_tests(specification, touched_project_files, integration=generate_integration_tests, existing_test_files=touched_test_files, test_results=test_results)
+            new_tests = self.generate_tests(specification, touched_project_files, integration=should_generate_integration_tests, existing_test_files=touched_test_files, test_results=test_results)
             generated_tests += new_tests
 
             if new_tests is not None:
@@ -94,28 +97,6 @@ class Coder(ABC):
 
         return ""
 
-    def generate_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None, integration: bool = False, test_results: Any = None) -> Tests:
-        """
-        Generate the tests. If there are existing tests that already adequately test the code, then this method may return None.
-
-        Args:
-            specification (str): The specification of the code to build.
-            files_to_test (Set[os.PathLike]): The files to test.
-            existing_test_files (Set[os.PathLike], optional): The files that already contain tests. Defaults to None.
-            integration (bool, optional): Whether to generate integration tests or unit tests. Defaults to False.
-            test_results (Any, optional): The results of the tests. Defaults to None.
-
-        Returns:
-            Tests: The tests for the code.
-        """
-        if existing_test_files is None:
-            existing_test_files = set()
-
-        if integration:
-            return self.generate_integration_tests(specification, files_to_test, existing_test_files, test_results=test_results)
-
-        return self.generate_unit_tests(specification, files_to_test, existing_test_files, test_results=test_results)
-
     def tests_directory(self, project_home: os.PathLike) -> os.PathLike:
         """
         Get the directory where the tests are stored.
@@ -128,7 +109,7 @@ class Coder(ABC):
         """
         return os.path.join(project_home, self.DEFAULT_TESTS_DIR)
 
-    def _choose_subcoder(self, task: str, allowed_subcoders: Set[Type[Self]]) -> Self:
+    def choose_subcoder(self, task: str, allowed_subcoders: Set[Type[Self]]) -> Self:
         """
         Choose and return subcoder to delegate a task to.
 
@@ -142,10 +123,16 @@ class Coder(ABC):
         if len(allowed_subcoders) == 0:
             raise ValueError("No coders to choose from.")
 
-        return self.choose_subcoder(task, allowed_subcoders)
+        return self._choose_subcoder(task, allowed_subcoders)
+    
+    def _read_files(self, files: Set[os.PathLike]) -> str:
+        file_contents = {}
+        for file in files:
+            with open(file, encoding="utf-8") as f:
+                file_contents[file] = f.read()
+        
+        return file_contents
 
-
-    @abstractmethod
     def refine(self, specification: Any, files: Set[os.PathLike], feedback: str) -> Set[os.PathLike]:
         """
         Refine the code.
@@ -158,8 +145,10 @@ class Coder(ABC):
         Returns:
             Set[os.PathLike]: Paths to the files generated/modified by the coder.
         """
+        model_input = self._generate_refine_prompt(specification, files, feedback)
 
-    @abstractmethod
+        return self._refine(self._prepare_model_input(model_input))
+
     def code(self, code_design: str) -> Set[os.PathLike]:
         """
         Generate the code.
@@ -170,34 +159,188 @@ class Coder(ABC):
         Returns:
             Set[os.PathLike]: Paths to the files generated/modified by the coder.
         """
+        model_input = self._generate_code_prompt(code_design)
+
+        return self._code(self._prepare_model_input(model_input))
+
+    def generate_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None, project_home: os.PathLike | None = None, integration: bool = False, test_results: Any = None) -> Tests:
+        """
+        Generate the tests. If there are existing tests that already adequately test the code, then this method may return None.
+
+        Args:
+            specification (str): The specification of the code to build.
+            files_to_test (Set[os.PathLike]): The files to test.
+            existing_test_files (Set[os.PathLike], optional): The files that already contain tests. Defaults to None.
+            integration (bool, optional): Whether to generate integration tests or unit tests. Defaults to False.
+            test_results (Any, optional): The results of the tests. Defaults to None.
+
+        Returns:
+            Tests: The tests for the code.
+        """
+        existing_test_files = existing_test_files or set()
+
+        if integration:
+            return self.generate_integration_tests(specification, files_to_test, existing_test_files, project_home, test_results)
+
+        return self.generate_unit_tests(specification, files_to_test, existing_test_files, project_home, test_results)
+    
+    def generate_integration_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None, project_home: os.PathLike | None = None, test_results: Any = None) -> Tests:
+        """
+        Generate the integration tests. If there are existing tests that already adequately test the code, then this method may return None.
+
+        Args:
+            specification (str): The specification of the code to build.
+            files_to_test (Set[os.PathLike]): The files to test.
+            existing_test_files (Set[os.PathLike], optional): The files that already contain tests. Defaults to None.
+            test_results (Any, optional): The results of the tests. Defaults to None.
+
+        Returns:
+            Tests: The tests for the code.
+        """
+        existing_test_files = existing_test_files or set()
+
+        model_input = self._generate_integration_tests_prompt(specification, files_to_test, existing_test_files, test_results)
+
+        test_files = self._generate_integration_tests(self._prepare_model_input(model_input))
+    
+        return self._files_to_tests(test_files, project_home)
+    
+    def generate_unit_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None, project_home: os.PathLike | None = None, test_results: Any = None) -> Tests:
+        """
+        Generate the unit tests. If there are existing tests that already adequately test the code, then this method may return None.
+
+        Args:
+            specification (str): The specification of the code to build.
+            files_to_test (Set[os.PathLike]): The files to test.
+            existing_test_files (Set[os.PathLike], optional): The files that already contain tests. Defaults to None.
+            test_results (Any, optional): The results of the tests. Defaults to None.
+
+        Returns:
+            Tests: The tests for the code.
+        """
+        existing_test_files = existing_test_files or set()
+
+        model_input = self._generate_unit_tests_prompt(specification, files_to_test, existing_test_files, test_results)
+
+        test_files = self._generate_unit_tests(self._prepare_model_input(model_input))
+    
+        return self._files_to_tests(test_files, project_home)
+    
+    def _generate_refine_prompt(self, specification: Any, files: Set[os.PathLike], feedback: str) -> Any:
+
+        codebase = self._read_files(files)
+        
+        model_input = [
+            system_prompt("You are an assistant that takes in a design specification, a codebase, and feedback from running automated tests. You must rewrite the codebase to match the specification and address feedback, if it needs to be rewritten. If you write code, ONLY write the code, no explanations or anything before or after. Previous code written will be shortened to <code>."),
+            assistant_prompt("What is your specification?"),
+            user_prompt(specification),
+            assistant_prompt("What is your codebase?"),
+            *[
+                user_prompt(f"{path}{self.PATH_CODE_SEPARATOR}{code}")
+                for path, code in codebase.items()
+            ],
+            assistant_prompt("What is the feedback from testing?"),
+            user_prompt(feedback),
+            assistant_prompt("Entering code writing mode..."),
+        ]
+
+        return model_input
+    
+    def _generate_code_prompt(self, code_design: str) -> Any:
+        model_input = [
+            system_prompt("You are an coding assistant that takes in a design document and creates code that meets the design document. If you write code, ONLY write the code, no explanations or anything before or after. Previous code written will be shortened to <code>."),
+            assistant_prompt("What is your code design?"),
+            user_prompt(code_design),
+            assistant_prompt("Entering code writing mode..."),
+        ]
+
+        return model_input
+
+    def _generate_tests_prompt(self, test_type: Literal["integration", "unit"], specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None, test_results: Any = None) -> Any:
+        existing_test_files = existing_test_files or set()
+
+        codebase = self._read_files(files_to_test)
+        existing_tests = self._read_files(existing_test_files)
+
+        model_input = [
+            system_prompt(f"You are an assistant that takes in a design specification, a codebase, and a list of existing {test_type} tests. You must rewrite the existing {test_type} tests to match the specification, if they need to be rewritten. If you write code, ONLY write the code for the {test_type} tests, no explanations or anything before or after. Previous tests written will be shortened to <tests>."),
+            assistant_prompt("What is your design specification?"),
+            user_prompt(specification),
+            assistant_prompt("What is your codebase?"),
+            *[
+                user_prompt(f"{path}{self.PATH_CODE_SEPARATOR}{code}")
+                for path, code in codebase.items()
+            ],
+            assistant_prompt(f"What are the existing {test_type} tests?"),
+            *[
+                user_prompt(f"{path}{self.PATH_CODE_SEPARATOR}{code}")
+                for path, code in existing_tests.items()
+            ],
+        ]
+
+        if test_results is not None:
+            model_input.extend([
+                assistant_prompt("What are previous test results?"),
+                user_prompt(test_results),
+            ])
+        
+        model_input.append(assistant_prompt("Entering test writing mode..."))
+        
+        return model_input
+
+    _generate_integration_tests_prompt = partialmethod(_generate_tests_prompt, "integration")
+    _generate_unit_tests_prompt = partialmethod(_generate_tests_prompt, "unit")
+
+    def _prepare_model_input(self, model_input: Any) -> Any:
+        return model_input
 
 
     @abstractmethod
-    def generate_integration_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] = set(), test_results: Any = None) -> Tests:
+    def _refine(self, model_input: Any) -> Set[os.PathLike]:
+        """
+        Refine the code.
+
+        Args:
+            model_input (Any): The input to the model from _generate_refine_prompt.
+
+        Returns:
+            Set[os.PathLike]: Paths to the files generated/modified by the coder.
+        """
+    
+    @abstractmethod
+    def _code(self, model_input: Any) -> Set[os.PathLike]:
+        """
+        Generate the code.
+
+        Args:
+            model_input (Any): The input to the model from _generate_code_prompt.
+
+        Returns:
+            Set[os.PathLike]: Paths to the files generated/modified by the coder.
+        """
+
+    @abstractmethod
+    def _generate_integration_tests(self, model_input: Any) -> Set[os.PathLike]:
         """
         Generate the integration tests.
 
         Args:
-            specification (str): The specification of the code to build.
-            files_to_test (Set[os.PathLike]): The files to test.
-            existing_test_files (Set[os.PathLike], optional): The files that already contain tests. Defaults to None.
+            model_input (Any): The input to the model from _generate_integration_tests_prompt.
 
         Returns:
-            Tests: The integration tests for the code.
+            Set[os.PathLike]: Paths to the files generated/modified by the coder.
         """
-
+    
     @abstractmethod
-    def generate_unit_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] = set(), test_results: Any = None) -> Tests:
+    def _generate_unit_tests(self, model_input: Any) -> Set[os.PathLike]:
         """
         Generate the unit tests.
 
         Args:
-            specification (str): The specification of the code to build.
-            files_to_test (Set[os.PathLike]): The files to test.
-            existing_test_files (Set[os.PathLike], optional): The files that already contain tests. Defaults to None.
+            model_input (Any): The input to the model from _generate_unit_tests_prompt.
 
         Returns:
-            Tests: The unit tests for the code.
+            Set[os.PathLike]: Paths to the files generated/modified by the coder.
         """
 
 
@@ -209,7 +352,7 @@ class Coder(ABC):
         """
 
     @abstractmethod
-    def choose_subcoder(self, task: str, allowed_subcoders: Iterable[Type[Self]]) -> Self:
+    def _choose_subcoder(self, task: str, allowed_subcoders: Iterable[Type[Self]]) -> Self:
         """
         Choose and return subcoder to delegate a task to.
 
@@ -268,4 +411,17 @@ class Coder(ABC):
 
         Returns:
             str: The explanation of how the code should be structured and how it should work.
+        """
+
+    @abstractmethod
+    def _files_to_tests(self, files: Set[os.PathLike], project_home: os.PathLike | None = None) -> Tests:
+        """
+        Convert a set of files to a Tests object.
+
+        Args:
+            files (Set[os.PathLike]): The files containing the test code.
+            project_home (os.PathLike | None, optional): The path to the project home. Defaults to None.
+
+        Returns:
+            Tests: The tests.
         """
