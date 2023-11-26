@@ -97,8 +97,8 @@ class OpenAICoder(Coder, ABC):
         ]
 
         modified_files = self._write_code_loop(model_input, code_type="tests")
-        
-        return self.files_to_tests(modified_files, self.project_home)
+
+        return self._files_to_tests(modified_files, self.project_home)
 
     generate_unit_tests = partialmethod(_generate_tests, "unit")
     generate_integration_tests = partialmethod(_generate_tests, "integration")
@@ -207,7 +207,7 @@ class OpenAICoder(Coder, ABC):
 
     
     @abstractmethod
-    def files_to_tests(self, files: Set[os.PathLike], project_home: os.PathLike | None = None) -> Tests:
+    def _files_to_tests(self, files: Set[os.PathLike], project_home: os.PathLike | None = None) -> Tests:
         """
         Convert a set of files to a Tests object.
 

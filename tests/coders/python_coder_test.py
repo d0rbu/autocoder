@@ -13,9 +13,10 @@ def test_create_coder_happypath():
         top_p=expected_top_p
     )
 
-    assert test_coder.model is not None
-    assert test_coder.model.default_generate_config.get("top_p") == expected_top_p
-    assert test_coder.project_home == expected_project_home
+    assert test_coder.default_config == {
+        "model": "gpt-4-turbo",
+    }
+    assert test_coder.allowed_subcoders == (PythonOpenAICoder,)
 
 @pytest.mark.dependency(depends=["test_create_coder_happypath"])
 @pytest.fixture

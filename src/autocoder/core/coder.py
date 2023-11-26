@@ -94,7 +94,7 @@ class Coder(ABC):
 
         return ""
 
-    def generate_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] = set(), integration: bool = False, test_results: Any = None) -> Tests:
+    def generate_tests(self, specification: Any, files_to_test: Set[os.PathLike], existing_test_files: Set[os.PathLike] | None = None, integration: bool = False, test_results: Any = None) -> Tests:
         """
         Generate the tests. If there are existing tests that already adequately test the code, then this method may return None.
 
@@ -108,6 +108,9 @@ class Coder(ABC):
         Returns:
             Tests: The tests for the code.
         """
+        if existing_test_files is None:
+            existing_test_files = set()
+
         if integration:
             return self.generate_integration_tests(specification, files_to_test, existing_test_files, test_results=test_results)
 
@@ -124,7 +127,7 @@ class Coder(ABC):
             os.PathLike: The path to the tests directory.
         """
         return os.path.join(project_home, self.DEFAULT_TESTS_DIR)
-    
+
     def _choose_subcoder(self, task: str, allowed_subcoders: Set[Type[Self]]) -> Self:
         """
         Choose and return subcoder to delegate a task to.
@@ -138,7 +141,7 @@ class Coder(ABC):
         """
         if len(allowed_subcoders) == 0:
             raise ValueError("No coders to choose from.")
-        
+
         return self.choose_subcoder(task, allowed_subcoders)
 
 

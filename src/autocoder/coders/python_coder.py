@@ -39,7 +39,7 @@ class PythonOpenAICoder(OpenAICoder):
 
         return config
 
-    def files_to_tests(self, files: Set[os.PathLike], project_home: os.PathLike | None = None) -> Tests:
+    def _files_to_tests(self, files: Set[os.PathLike], project_home: os.PathLike | None = None) -> Tests:
         return PythonTests(
             test_files=files,
             python_executable=self.python_executable,
