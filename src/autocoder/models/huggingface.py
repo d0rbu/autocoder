@@ -1,6 +1,6 @@
 import torch as th
 from typing import Any
-from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from .wrapper import ModelWrapper
 
 
