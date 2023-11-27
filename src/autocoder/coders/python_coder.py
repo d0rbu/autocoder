@@ -100,7 +100,7 @@ class PythonOpenAICoder(OpenAICoder):
 
         modified_files = set()
         for _ in range(max_scaffolding_steps):
-            response = self.model(messages=model_input, tools=tools, tool_choice="auto")
+            response = self.model(model_input=model_input, tools=tools, tool_choice="auto")
             response_message = response.choices[0].message
             tool_calls = response_message.tool_calls
 
@@ -147,5 +147,5 @@ class PythonOpenAICoder(OpenAICoder):
 
     def design_solution(self, specification: Any) -> str:
         model_input = system_user_prompt("You are an assistant that helps generate design documents. Your requirements are: \n1. Design a system that meets the following specification.\n2. You must use Python.\n3. You must specify all frameworks used. (e.g. This will be built in Django and will utilize OpenCV).\n4. Make sure to be extremely detailed.", specification)
-        response = self.model(messages=model_input)
+        response = self.model(model_input=model_input)
         return response.choices[0].message.content

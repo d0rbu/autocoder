@@ -1,3 +1,4 @@
+import torch as th
 from typing import Any
 from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig
 from .wrapper import ModelWrapper
@@ -10,14 +11,13 @@ class HuggingfaceWrapper(ModelWrapper):
 
     DEFAULT_CONFIG = {
         "max_length": 4096,
-        "temperature": 0.1,
-        "top_p": 0.3,
     }
 
-    def __init__(self, model: str, **default_generate_config: dict[str, Any]):
-        super().__init__(default_generate_config)
-        
-        self.model = AutoModelForCausalLM.from_pretrained(model)
+    def __init__(self, model: str, model_init_kwargs: dict[str, Any] | None = None, **default_generate_config: dict[str, Any]):
+        super().__init__(**default_generate_config)
+        model_init_kwargs = model_init_kwargs or {}
+
+        self.model = AutoModelForCausalLM.from_pretrained(model, **model_init_kwargs)
         self.tokenizer = AutoTokenizer.from_pretrained(model)
 
     def generate(
@@ -28,14 +28,16 @@ class HuggingfaceWrapper(ModelWrapper):
         """
         Generate text from the given input.
         """
-        
+
         generate_config = self.default_generate_config.copy()
         generate_config.update(kwargs)
-        generate_config = GenerationConfig(**generate_config)
 
-        model_input = self.tokenizer(model_input, return_tensors="pt")
+        model_input = self.tokenizer.apply_chat_template(model_input, return_tensors="pt").to(self.model.device)
 
-        model_output = self.model.generate(**model_input, generation_config=generate_config)
-        model_output = self.tokenizer.batch_decode(model_output, skip_special_tokens=True)
+        model_output = self.model.generate(model_input, **generate_config)
+        
+        new_tokens = model_output[:, model_input.shape[-1]:]
 
-        return model_output
+        model_output = self.tokenizer.batch_decode(new_tokens, skip_special_tokens=True)
+
+        return model_output[0]

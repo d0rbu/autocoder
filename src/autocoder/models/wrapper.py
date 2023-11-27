@@ -4,7 +4,7 @@ from warnings import warn
 
 
 class ModelWrapper(ABC):
-    def __init__(self, default_generate_config: dict | None = None):
+    def __init__(self, **default_generate_config: dict[str, Any]) -> None:
         self.default_generate_config = self.DEFAULT_CONFIG.copy()
         if default_generate_config is not None:
             self.default_generate_config.update(default_generate_config)
@@ -19,6 +19,7 @@ class ModelWrapper(ABC):
     
     def __call__(
         self,
+        model_input: Any,
         max_retries: int = 1,
         process_response_fn: Callable[[str], str] | None = None,
         **kwargs,
@@ -34,7 +35,7 @@ class ModelWrapper(ABC):
         """
         for _ in range(max_retries):
             try:
-                generation: str = self.generate(**kwargs)
+                generation: str = self.generate(model_input, **kwargs)
                 if process_response_fn is None:
                     return generation
                 

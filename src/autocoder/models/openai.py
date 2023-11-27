@@ -25,8 +25,8 @@ class OpenAIWrapper(ModelWrapper):
         "tool_choice": None,
     }
 
-    def __init__(self, key: str, organization: str | None = None, **default_generate_config: dict[str, Any]):
-        super().__init__(default_generate_config)
+    def __init__(self, key: str, organization: str | None = None, **default_generate_config: dict[str, Any]) -> None:
+        super().__init__(**default_generate_config)
         
         self.client = OpenAI(
             organization=organization,
