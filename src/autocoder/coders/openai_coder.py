@@ -7,7 +7,7 @@ from typing import Any, Set, Sequence, Type, Iterable, Literal, Mapping
 from abc import ABC
 from .coder import Coder
 from .prompt_utils import system_user_prompt, tool, assistant_prompt, user_prompt, use_openai_tool
-from .utils import DEFAULT_PERMISSIONS, parse_chat
+from .utils import DEFAULT_PERMISSIONS, parse_chat, truncate_chat
 from ..models.openai import OpenAIWrapper
 
 
@@ -44,6 +44,7 @@ class OpenAICoder(Coder, ABC):
 
         modified_files = set()
         created_files = set()
+        import pdb; pdb.set_trace()
         for _ in range(max_responses):
             response = self.model(model_input=model_input)
             response_message = response.choices[0].message
@@ -56,7 +57,11 @@ class OpenAICoder(Coder, ABC):
             if alphabetical_message.lower() == self.FINISH_KEYWORD:
                 break
 
+            model_input.append(assistant_prompt(truncate_chat(response_message.content)))
             codeblocks = parse_chat(response_message.content)
+
+            if len(codeblocks) <= 0:
+                model_input.append(user_prompt("NO!!! REMEMBER THE FORMAT:\n<path>\n```\n<code>```"))
 
             for path, code in codeblocks:
                 current_file = os.path.join(self.project_home, path)
@@ -74,7 +79,7 @@ class OpenAICoder(Coder, ABC):
                     with open(current_file, "w", encoding="utf-8") as f:
                         f.write(code)
 
-                    model_input.append(assistant_prompt(f"{path}\n<{code_type}>"))
+                    model_input.append(user_prompt(f"{path}\n```\n<{code_type}>```"))
                     modified_files.add(current_file)
         
         return modified_files

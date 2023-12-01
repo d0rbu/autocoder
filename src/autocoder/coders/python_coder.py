@@ -160,6 +160,6 @@ class PythonOpenAICoder(OpenAICoder):
         return installed_dependencies
 
     def design_solution(self, specification: Any) -> str:
-        model_input = system_user_prompt("You are an assistant that helps generate design documents. Your requirements are: \n1. Design a system that meets the following specification.\n2. You must use Python.\n3. You must specify all frameworks used. (e.g. This will be built in Django and will utilize OpenCV).\n4. Make sure to be extremely detailed.", specification)
+        model_input = system_user_prompt("You are an assistant that helps generate design documents. Your requirements are: \n1. Design a system that meets the following specification.\n2. You must use Python.\n3. You must specify all frameworks used. (e.g. This will be built in Django and will utilize OpenCV).\n4. Make sure to be extremely detailed.\n5. You will NOT write ANY explicit code.", specification)
         response = self.model(model_input=model_input)
         return response.choices[0].message.content
