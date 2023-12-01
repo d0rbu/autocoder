@@ -37,7 +37,6 @@ class OpenAICoder(Coder, ABC):
     def _write_code_loop(self, model_input: list[str], code_type: Literal["tests", "code"] = "code", max_responses: int = 5, overwrite_files: bool = True) -> None:
         modified_files = set()
         created_files = set()
-        current_file = None
         for _ in range(max_responses):
             response = self.model(model_input=model_input, tools=code_writing_tools, tool_choice="auto")
             response_message = response.choices[0].message
@@ -48,7 +47,7 @@ class OpenAICoder(Coder, ABC):
 
             if tool_calls:
                 for tool_call in tool_calls:
-                    if tool_call.function.name == "select_file":
+                    if tool_call.function.name == "write_to_file":
                         current_file = tool_call.function.arguments.get("file")
                         if not os.path.exists(current_file):
                             created_files.add(current_file)
@@ -61,7 +60,10 @@ class OpenAICoder(Coder, ABC):
                             model_input.append(user_prompt(f"File {current_file} already exists. Please select another file to write to. Files in {parent_directory} are: {os.listdir(parent_directory)}"))
                             write_code_to_file = False
                         else:
-                            model_input.append(assistant_prompt(f"I will write {code_type} in {current_file}:"))
+                            with open(current_file, "w", encoding="utf-8") as f:
+                                f.write(tool_call.function.arguments.get("code"))
+
+                            model_input.append(assistant_prompt(f"<{code_type}>"))
                             modified_files.add(current_file)
                     elif tool_call.function.name == "finish":
                         finished_writing_code = True
@@ -70,18 +72,6 @@ class OpenAICoder(Coder, ABC):
             
             if finished_writing_code:
                 break
-
-            if not (response_message.content and write_code_to_file):
-                continue
-
-            if current_file is None:
-                warn(f"Wanted to write {code_type} but no file selected to write code in.")
-                continue
-            
-            with open(current_file, "w", encoding="utf-8") as f:
-                f.write(response_message.content)
-            
-            model_input.append(assistant_prompt(f"<{code_type}>"))
         
         return modified_files
 

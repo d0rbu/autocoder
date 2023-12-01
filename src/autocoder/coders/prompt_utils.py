@@ -86,17 +86,20 @@ def tool(name: str, description: str, parameters: dict[str, Any]) -> dict[str, A
         }
     }
 
-select_file_tool = tool(
-    name="select_file",
-    description="Select a file to write in. It may be a new file or an existing file. After the file is selected, simply reply with the code to be written in the file. If a file is currently selected, do NOT select it again.",
+write_to_file_tool = tool(
+    name="write_to_file",
+    description="Write code into a selected file. It may be a new file or an existing file.",
     parameters={
         "type": "object",
         "properties": {
             "file": {
                 "type": "string",
             },
+            "code": {
+                "type": "string",
+            },
         },
-        "required": ["file"],
+        "required": ["file", "code"],
     },
 )
 
@@ -110,6 +113,6 @@ finish_tool = tool(
 )
 
 code_writing_tools = [
-    select_file_tool,
+    write_to_file_tool,
     finish_tool,
 ]
