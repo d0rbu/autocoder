@@ -30,6 +30,7 @@ class OpenAIWrapper(ModelWrapper):
     }
 
     SECONDS_PER_MINUTE = 60
+    WAIT_EPSILON = 0.05
 
     def __init__(self, key: str, organization: str | None = None, rate_limit_rpm: int = 500, **default_generate_config: dict[str, Any]) -> None:
         super().__init__(**default_generate_config)
@@ -79,7 +80,7 @@ class OpenAIWrapper(ModelWrapper):
         one_minute_ago = time.time() - self.SECONDS_PER_MINUTE
         if self.last_request_times[0] > one_minute_ago:
             time_left = self.last_request_times[0] - one_minute_ago
-            time.sleep(time_left)
+            time.sleep(time_left + self.WAIT_EPSILON)
         
         self.last_request_times.append(time.time())
 

@@ -231,7 +231,7 @@ class Coder(ABC):
         codebase = self._read_files(files)
         
         model_input = [
-            system_prompt("You are an assistant that takes in a design specification, a codebase, and feedback from running automated tests. You must rewrite the codebase to match the specification and address feedback, if it needs to be rewritten. If you write code, ONLY write the code, no explanations or anything before or after. Previous code written will be shortened to <code>."),
+            system_prompt("You are an assistant that takes in a design specification, a codebase, and feedback from running automated tests. You must rewrite the codebase to match the specification and address feedback, if it needs to be rewritten. If you write code, write it in the format of <path>\n<codeblock>, where <codeblock> is the code surrounded by ```. Previous code written will be shortened to <code>."),
             assistant_prompt("What is your specification?"),
             user_prompt(specification),
             assistant_prompt("What is your codebase?"),
@@ -248,7 +248,7 @@ class Coder(ABC):
     
     def _generate_code_prompt(self, code_design: str) -> Any:
         model_input = [
-            system_prompt("You are an coding assistant that takes in a design document and creates code that meets the design document. If you write code, ONLY write the code, no explanations or anything before or after. Previous code written will be shortened to <code>."),
+            system_prompt("You are an coding assistant that takes in a design document and creates code that meets the design document. If you write code, write it in the format of <path>\n<codeblock>, where <codeblock> is the code surrounded by ```. Previous code written will be shortened to <code>."),
             assistant_prompt("What is your code design?"),
             user_prompt(code_design),
             assistant_prompt("Entering code writing mode..."),
@@ -263,7 +263,7 @@ class Coder(ABC):
         existing_tests = self._read_files(existing_test_files)
 
         model_input = [
-            system_prompt(f"You are an assistant that takes in a design specification, a codebase, and a list of existing {test_type} tests. You must rewrite the existing {test_type} tests to match the specification, if they need to be rewritten. If you write code, ONLY write the code for the {test_type} tests, no explanations or anything before or after. Previous tests written will be shortened to <tests>."),
+            system_prompt(f"You are an assistant that takes in a design specification, a codebase, and a list of existing {test_type} tests. You must rewrite the existing {test_type} tests to match the specification, if they need to be rewritten. If you write code, write it in the format of <path>\n<codeblock>, where <codeblock> is the code surrounded by ```. Previous tests written will be shortened to <tests>."),
             assistant_prompt("What is your design specification?"),
             user_prompt(specification),
             assistant_prompt("What is your codebase?"),

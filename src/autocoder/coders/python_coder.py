@@ -7,7 +7,7 @@ from ordered_set import OrderedSet
 from .coder import Coder
 from .openai_coder import OpenAICoder
 from .prompt_utils import system_user_prompt, system_prompt, assistant_prompt, user_prompt, tool, finish_tool
-from .utils import get_exe_extension
+from .utils import get_exe_extension, DEFAULT_PERMISSIONS
 from ..tests.python_tests import PythonTests
 from ..tests.tests import Tests
 
@@ -53,7 +53,7 @@ class PythonOpenAICoder(OpenAICoder):
             project_home=project_home,
         )
 
-    PDM_PROJECT_FILES = {"pyproject.toml", "README.md", ".gitignore", "src", "tests", ".venv"}
+    PDM_PROJECT_FILES = {"pyproject.toml", "README.md", ".gitignore", "src", "tests"}
     STANDARD_LIBRARIES = {"pytest", "pytest-dependency"}
 
     def scaffold(self, code_design: str, project_home: os.PathLike, max_scaffolding_steps: int = 10) -> Set[os.PathLike]:
@@ -119,17 +119,17 @@ class PythonOpenAICoder(OpenAICoder):
                         venv_path = os.path.join(self.project_home, ".venv")
                         if not os.path.exists(venv_path):
                             subprocess.run(["python", "-m", "venv", ".venv"], cwd=self.project_home, check=True)
-                        
+
                         # Set permissions for all files/folders in directory
                         for root, dirs, files in os.walk(self.project_home):
                             for d in dirs:
-                                os.chmod(os.path.join(root, d), 0o770)
+                                os.chmod(os.path.join(root, d), DEFAULT_PERMISSIONS)
                             for f in files:
-                                os.chmod(os.path.join(root, f), 0o770)
+                                os.chmod(os.path.join(root, f), DEFAULT_PERMISSIONS)
 
                         self.python_executable = os.path.join(self.project_home, ".venv", "Scripts", f"python{get_exe_extension()}")
                         subprocess.run([self.python_executable, "-m", "pip", "install", *self.STANDARD_LIBRARIES], cwd=self.project_home, check=True)
-                        
+
                         model_input.append(user_prompt("Initialized pdm project and activated `.venv` virtual environment."))
                     elif tool_call.function.name == "pip_install":
                         package = tool_call.function.arguments.get("package")

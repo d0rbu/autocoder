@@ -26,7 +26,7 @@ class PythonTests(Tests):
 
     def test_files(self) -> Sequence[os.PathLike]:
         main_test_files = self._main_test_files()
-        other_test_files = {other_test.test_files() for other_test in self.other_tests}
+        other_test_files = {other_test_file for other_test in self.other_tests for other_test_file in other_test.test_files()}
         return list(main_test_files | other_test_files)
     
     def _main_test_files(self) -> Set[os.PathLike]:

@@ -86,23 +86,6 @@ def tool(name: str, description: str, parameters: dict[str, Any]) -> dict[str, A
         }
     }
 
-write_to_file_tool = tool(
-    name="write_to_file",
-    description="Write code into a selected file. It may be a new file or an existing file.",
-    parameters={
-        "type": "object",
-        "properties": {
-            "file": {
-                "type": "string",
-            },
-            "code": {
-                "type": "string",
-            },
-        },
-        "required": ["file", "code"],
-    },
-)
-
 finish_tool = tool(
     name="finish",
     description="Signal that you are done.",
@@ -113,6 +96,5 @@ finish_tool = tool(
 )
 
 code_writing_tools = [
-    write_to_file_tool,
     finish_tool,
 ]

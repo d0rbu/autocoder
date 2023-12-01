@@ -6,6 +6,7 @@ from typing import Any, Set, Sequence, Type, Iterable, Literal, Mapping
 from abc import ABC
 from .coder import Coder
 from .prompt_utils import system_user_prompt, tool, assistant_prompt, user_prompt, code_writing_tools, use_openai_tool
+from .utils import DEFAULT_PERMISSIONS, parse_chat
 from ..models.openai import OpenAIWrapper
 
 
@@ -43,35 +44,37 @@ class OpenAICoder(Coder, ABC):
             tool_calls = response_message.tool_calls
 
             finished_writing_code = False
-            write_code_to_file = True
 
             if tool_calls:
                 for tool_call in tool_calls:
-                    if tool_call.function.name == "write_to_file":
-                        current_file = tool_call.function.arguments.get("file")
-                        if not os.path.exists(current_file):
-                            created_files.add(current_file)
-                            modified_files.add(current_file)
-                            Path(current_file).touch()
-
-                        if not overwrite_files and current_file not in created_files:  # Don't overwrite existing files, but you can write to files that you created
-                            parent_directory = os.path.dirname(current_file)
-
-                            model_input.append(user_prompt(f"File {current_file} already exists. Please select another file to write to. Files in {parent_directory} are: {os.listdir(parent_directory)}"))
-                            write_code_to_file = False
-                        else:
-                            with open(current_file, "w", encoding="utf-8") as f:
-                                f.write(tool_call.function.arguments.get("code"))
-
-                            model_input.append(assistant_prompt(f"<{code_type}>"))
-                            modified_files.add(current_file)
-                    elif tool_call.function.name == "finish":
+                    if tool_call.function.name == "finish":
                         finished_writing_code = True
                     else:
                         warn(f"Unknown tool call: {tool_call}")
             
             if finished_writing_code:
                 break
+
+            codeblocks = parse_chat(response_message.content)
+
+            for path, code in codeblocks:
+                current_file = os.path.join(self.project_home, path)
+                if not os.path.exists(current_file):
+                    created_files.add(current_file)
+                    modified_files.add(current_file)
+                    Path(current_file).touch()
+                    os.chmod(current_file, DEFAULT_PERMISSIONS)
+
+                if not overwrite_files and current_file not in created_files:  # Don't overwrite existing files, but you can write to files that you created
+                    parent_directory = os.path.dirname(current_file)
+
+                    model_input.append(user_prompt(f"File {current_file} already exists. Please select another file to write to. Files in {parent_directory} are: {os.listdir(parent_directory)}"))
+                else:
+                    with open(current_file, "w", encoding="utf-8") as f:
+                        f.write(code)
+
+                    model_input.append(assistant_prompt(f"{path}\n<{code_type}>"))
+                    modified_files.add(current_file)
         
         return modified_files
 
