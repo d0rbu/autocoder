@@ -130,9 +130,9 @@ class PythonOpenAICoder(OpenAICoder):
                         self.python_executable = os.path.join(self.project_home, ".venv", "Scripts", f"python{get_exe_extension()}")
                         subprocess.run([self.python_executable, "-m", "pip", "install", *self.STANDARD_LIBRARIES], cwd=self.project_home, check=True)
 
-                        model_input.append(user_prompt("Initialized pdm project and activated `.venv` virtual environment."))
+                        model_input.append(assistant_prompt("Initialized pdm project and activated `.venv` virtual environment."))
                     elif tool_call.function.name == "pip_install":
-                        package = tool_call.function.arguments.get("package")
+                        package = tool_call.function.arguments.get("package", None)
 
                         if package is None:
                             warn("No package specified for pip install.")
@@ -140,7 +140,7 @@ class PythonOpenAICoder(OpenAICoder):
 
                         subprocess.run([self.python_executable, "-m", "pip", "install", package], cwd=self.project_home, check=True)
 
-                        model_input.append(user_prompt(f"Installed package `{package}` with python executable `{self.python_executable}`."))
+                        model_input.append(assistant_prompt(f"I installed package `{package}`. I will not install this package again."))
                     elif tool_call.function.name == "finish":
                         finished_scaffolding = True
                     else:

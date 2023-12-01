@@ -128,6 +128,9 @@ class Coder(ABC):
     def _read_files(self, files: Set[os.PathLike]) -> str:
         file_contents = {}
         for file in files:
+            if not os.path.isfile(file):
+                continue
+
             with open(file, encoding="utf-8") as f:
                 file_contents[file] = f.read()
         
@@ -251,7 +254,7 @@ class Coder(ABC):
             system_prompt("You are an coding assistant that takes in a design document and creates code that meets the design document. If you write code, write it in the format of <path>\n<codeblock>, where <codeblock> is the code surrounded by ```. Previous code written will be shortened to <code>."),
             assistant_prompt("What is your code design?"),
             user_prompt(code_design),
-            assistant_prompt("Entering code writing mode..."),
+            assistant_prompt("Entering code writing mode. I will only make function calls if I absolutely have to, otherwise I will just be writing code..."),
         ]
 
         return model_input
@@ -284,7 +287,7 @@ class Coder(ABC):
                 user_prompt(test_results),
             ])
         
-        model_input.append(assistant_prompt("Entering test writing mode..."))
+        model_input.append(assistant_prompt("Entering test writing mode. I will only make function calls if I absolutely have to, otherwise I will just be writing code..."))
         
         return model_input
 
