@@ -242,7 +242,7 @@ class Coder(ABC):
         codebase = self._read_files(files)
         
         model_input = [
-            system_prompt("You are an assistant that takes in a design specification, a codebase, and feedback from running automated tests. You must rewrite the codebase to match the specification and address feedback, if it needs to be rewritten. If you write code, write it in the format of <path>\n<codeblock>, where <codeblock> is the code surrounded by ```. Previous code written will be shortened to <code>. When you are finished, simply respond with \"finish\", absolutely no other characters."),
+            system_prompt("You are an assistant that takes in a design specification, a codebase, and feedback from running automated tests. You must rewrite the codebase to match the specification and address feedback, if it needs to be rewritten. If you write code, YOU MUST write it in the format of <path>\n```\n<code>```. DO NOT forget the path right before the codeblock. Previous code written will be shortened to <code>. When you are finished, simply respond with \"finish\", absolutely no other characters."),
             assistant_prompt("What is your specification?"),
             user_prompt(specification),
             assistant_prompt("What is your codebase?"),
@@ -259,7 +259,7 @@ class Coder(ABC):
     
     def _generate_code_prompt(self, code_design: str) -> Any:
         model_input = [
-            system_prompt("You are an coding assistant that takes in a design document and creates code that meets the design document. If you write code, write it in the format of <path>\n<codeblock>, where <codeblock> is the code surrounded by ```. Previous code written will be shortened to <code>. When you are finished, simply respond with \"finish\", absolutely no other characters."),
+            system_prompt("You are an coding assistant that takes in a design document and creates code that meets the design document. If you write code, YOU MUST write it in the format of <path>\n```\n<code>```. Previous code written will be shortened to <code>. When you are finished, simply respond with \"finish\", absolutely no other characters."),
             assistant_prompt("What is your code design?"),
             user_prompt(code_design),
             assistant_prompt("Entering code writing mode. I will only finish if I am absolutely done, otherwise I will just write code. Currently NO code is written to any file so I WILL NOT call finish() immediately."),
@@ -274,7 +274,7 @@ class Coder(ABC):
         existing_tests = self._read_files(existing_test_files)
 
         model_input = [
-            system_prompt(f"You are an assistant that takes in a design specification, a codebase, and a list of existing {test_type} tests. You must rewrite the existing {test_type} tests to match the specification, if they need to be rewritten. If you write code, write it in the format of <path>\n<codeblock>, where <codeblock> is the code surrounded by ```. Previous tests written will be shortened to <tests>. When you are finished, simply respond with \"finish\", absolutely no other characters."),
+            system_prompt(f"You are an assistant that takes in a design specification, a codebase, and a list of existing {test_type} tests. You must rewrite the existing {test_type} tests to match the specification, if they need to be rewritten. If you write code, YOU MUST write it in the format of <path>\n```\n<code>```. DO NOT forget the path right before the codeblock. Previous tests written will be shortened to <tests>. When you are finished, simply respond with \"finish\", absolutely no other characters."),
             assistant_prompt("What is your design specification?"),
             user_prompt(specification),
             assistant_prompt("What is your codebase?"),

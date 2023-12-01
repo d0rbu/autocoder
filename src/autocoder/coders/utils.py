@@ -25,7 +25,7 @@ def parse_chat(chat) -> List[Tuple[str, str]]:
         List[Tuple[str, str]]: A list of (filename, codeblock) tuples.
     """
     # Get all ``` blocks and preceding filenames
-    regex = r"(\S+)\n\s*```[^\n]*\n(.+?)```"
+    regex = r"(\S+)\n?\s*```[^\n]*\n(.+?)\n*```"
     matches = re.finditer(regex, chat, re.DOTALL)
 
     files = []
