@@ -83,7 +83,7 @@ class OpenAIWrapper(ModelWrapper):
         
         self.last_request_times.append(time.time())
 
-        response = self.client.chat.completions.create(messages=model_input,**generate_config)
+        response = self.client.chat.completions.create(messages=model_input, **generate_config)
 
         print(response)
 

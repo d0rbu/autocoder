@@ -36,6 +36,7 @@ class OpenAICoder(Coder, ABC):
 
     def _write_code_loop(self, model_input: list[str], code_type: Literal["tests", "code"] = "code", max_code_files: int = 5, overwrite_files: bool = True) -> None:
         modified_files = set()
+        created_files = set()
         current_file = None
         for _ in range(max_code_files):
             response = self.model(model_input=model_input, tools=code_writing_tools, tool_choice="auto")
@@ -49,15 +50,16 @@ class OpenAICoder(Coder, ABC):
                 for tool_call in tool_calls:
                     if tool_call.function.name == "select_file":
                         current_file = tool_call.function.arguments.get("file")
+                        if not os.path.exists(current_file):
+                            created_files.add(current_file)
+                            Path(current_file).touch()
 
-                        if not overwrite_files and os.path.exists(current_file):
+                        if not overwrite_files and current_file not in created_files:  # Don't overwrite existing files, but you can write to files that you created
                             parent_directory = os.path.dirname(current_file)
 
                             model_input.append(user_prompt(f"File {current_file} already exists. Please select another file to write to. Files in {parent_directory} are: {os.listdir(parent_directory)}"))
                             write_code_to_file = False
                         else:
-                            Path(current_file).touch()  # Ensure file exists
-
                             model_input.append(assistant_prompt(f"I will write {code_type} in {current_file}:"))
                             modified_files.add(current_file)
                     elif tool_call.function.name == "finish":
