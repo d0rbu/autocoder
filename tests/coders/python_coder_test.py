@@ -14,7 +14,7 @@ def test_create_coder_happypath():
     )
 
     assert test_coder.default_config == {
-        "model": "gpt-4-turbo",
+        "model": "gpt-4-1106-preview",
     }
     assert test_coder.allowed_subcoders == (PythonOpenAICoder,)
 

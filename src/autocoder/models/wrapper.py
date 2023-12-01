@@ -20,7 +20,7 @@ class ModelWrapper(ABC):
     def __call__(
         self,
         model_input: Any,
-        max_retries: int = 1,
+        max_tries: int = 2,
         process_response_fn: Callable[[str], str] | None = None,
         **kwargs,
     ) -> str:
@@ -33,7 +33,7 @@ class ModelWrapper(ABC):
         Returns:
             str: The generated text.
         """
-        for _ in range(max_retries):
+        for _ in range(max_tries):
             try:
                 generation: str = self.generate(model_input, **kwargs)
                 if process_response_fn is None:

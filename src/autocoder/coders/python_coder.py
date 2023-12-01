@@ -6,7 +6,8 @@ from typing import Any, Type, Iterable, Set
 from ordered_set import OrderedSet
 from .coder import Coder
 from .openai_coder import OpenAICoder
-from .prompt_utils import system_user_prompt, system_prompt, assistant_prompt, user_prompt, tool, finish_tool
+from .prompt_utils import system_user_prompt, system_prompt, assistant_prompt, user_prompt, tool, finish_tool, validate_openai_tool_usage
+from .utils import get_exe_extension
 from ..tests.python_tests import PythonTests
 from ..tests.tests import Tests
 
@@ -17,6 +18,7 @@ class PythonOpenAICoder(OpenAICoder):
         key: str,
         organization: str,
         project_home: os.PathLike,
+        rate_limit_rpm: int = 500,
         python_executable: os.PathLike = Path("python"),
         **default_generate_config: dict[str, Any],
     ) -> None:
@@ -24,6 +26,7 @@ class PythonOpenAICoder(OpenAICoder):
             key=key,
             organization=organization,
             project_home=project_home,
+            rate_limit_rpm=rate_limit_rpm,
             **default_generate_config,
         )
 
@@ -34,7 +37,7 @@ class PythonOpenAICoder(OpenAICoder):
         config = super().default_config.copy()
 
         config.update({
-            "model": "gpt-4-turbo",
+            "model": "gpt-4-1106-preview",
         })
 
         return config
@@ -100,7 +103,7 @@ class PythonOpenAICoder(OpenAICoder):
 
         modified_files = set()
         for _ in range(max_scaffolding_steps):
-            response = self.model(model_input=model_input, tools=tools, tool_choice="auto")
+            response = self.model(model_input=model_input, process_response_fn=validate_openai_tool_usage, tools=tools, tool_choice="auto")
             response_message = response.choices[0].message
             tool_calls = response_message.tool_calls
 
@@ -113,7 +116,11 @@ class PythonOpenAICoder(OpenAICoder):
                         for file in self.PDM_PROJECT_FILES:
                             modified_files.add(os.path.join(self.project_home, file))
 
-                        self.python_executable = os.path.join(self.project_home, ".venv", "Scripts", "python")
+                        venv_path = os.path.join(self.project_home, ".venv")
+                        if not os.path.exists(venv_path):
+                            subprocess.run(["python", "-m", "venv", ".venv"], cwd=self.project_home, check=True)
+
+                        self.python_executable = os.path.join(self.project_home, ".venv", "Scripts", f"python{get_exe_extension()}")
                         subprocess.run([self.python_executable, "-m", "pip", "install", *self.STANDARD_LIBRARIES], cwd=self.project_home, check=True)
                         
                         model_input.append(user_prompt("Initialized pdm project and activated `.venv` virtual environment."))

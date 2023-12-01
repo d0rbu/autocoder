@@ -14,12 +14,13 @@ class OpenAICoder(Coder, ABC):
         key: str,
         organization: str | None = None,
         project_home: os.PathLike = os.getcwd(),
+        rate_limit_rpm: int = 500,
         **default_generate_config: dict[str, Any],
     ) -> None:
         default_config = self.default_config.copy()
         default_config.update(default_generate_config)
 
-        self.model = OpenAIWrapper(key, organization, **default_config)
+        self.model = OpenAIWrapper(key, organization, rate_limit_rpm, **default_config)
         self.project_home = project_home
 
     @property
