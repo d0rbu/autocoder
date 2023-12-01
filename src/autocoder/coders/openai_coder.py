@@ -1,5 +1,6 @@
 import os
 import json
+from pathlib import Path
 from warnings import warn
 from typing import Any, Set, Sequence, Type, Iterable, Literal, Mapping
 from abc import ABC
@@ -51,10 +52,12 @@ class OpenAICoder(Coder, ABC):
 
                         if not overwrite_files and os.path.exists(current_file):
                             parent_directory = os.path.dirname(current_file)
-                            
+
                             model_input.append(user_prompt(f"File {current_file} already exists. Please select another file to write to. Files in {parent_directory} are: {os.listdir(parent_directory)}"))
                             write_code_to_file = False
                         else:
+                            Path(current_file).touch()  # Ensure file exists
+
                             model_input.append(assistant_prompt(f"I will write {code_type} in {current_file}:"))
                             modified_files.add(current_file)
                     elif tool_call.function.name == "finish":

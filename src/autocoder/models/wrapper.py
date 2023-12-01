@@ -36,11 +36,12 @@ class ModelWrapper(ABC):
         Returns:
             str: The generated text.
         """
+        if process_response_fn is None:
+            process_response_fn = self.process_response
+
         for _ in range(max_tries):
             try:
                 generation: str = self.generate(model_input, **kwargs)
-                if process_response_fn is None:
-                    process_response_fn = self.process_response
                 
                 return process_response_fn(generation)
             except Exception as e:
