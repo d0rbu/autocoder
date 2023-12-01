@@ -260,7 +260,7 @@ class Coder(ABC):
         model_input.extend([
             assistant_prompt("What is the current working directory?"),
             user_prompt(os.getcwd()),
-            assistant_prompt("Entering code writing mode..."),
+            assistant_prompt("Thank you. I will know reply with the code in the right format."),
         ])
 
         return model_input
@@ -272,7 +272,7 @@ class Coder(ABC):
             user_prompt(code_design),
             assistant_prompt("What is the current working directory?"),
             user_prompt(os.getcwd()),
-            assistant_prompt("Entering code writing mode..."),
+            assistant_prompt("Thank you. I will know reply with the code in the right format."),
         ]
 
         return model_input
@@ -308,7 +308,7 @@ class Coder(ABC):
         model_input.extend([
             assistant_prompt("What is the current working directory?"),
             user_prompt(os.getcwd()),
-            assistant_prompt("Entering test writing mode..."),
+            assistant_prompt("Thank you. I will know reply with the code in the right format."),
         ])
 
         return model_input
