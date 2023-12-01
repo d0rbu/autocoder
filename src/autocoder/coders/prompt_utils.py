@@ -1,6 +1,4 @@
-import json
 from typing import Any
-from openai.types.chat import ChatCompletion
 
 
 def system_prompt(prompt: str) -> dict[str, str]:
@@ -64,28 +62,8 @@ def system_user_prompt(system_message: str, user_message: str) -> list[dict[str,
     ]
 
 
-def validate_openai_tool_usage(tool_usage: ChatCompletion) -> ChatCompletion:
-    """Validates that the tool usage is valid, if any tool is used.
-
-    Args:
-        tool_usage (ChatCompletion): The chat completion that may contain tool usage.
-
-    Raises:
-        ValueError: If the tool usage is invalid.
-
-    Returns:
-        ChatCompletion: The same chat completion.
-    """
-    for choice in tool_usage.choices:
-        if not choice.message.tool_calls:
-            continue
-
-        for tool_call in choice.message.tool_calls:
-            arguments = tool_call.function.arguments
-            arguments = json.loads(arguments)
-            tool_call.function.arguments = arguments
-
-    return tool_usage
+def use_openai_tool(tool_name: str) -> dict[str, str | dict[str, str]]:
+    return {"type": "function", "function": {"name": tool_name}}
 
 
 def tool(name: str, description: str, parameters: dict[str, Any]) -> dict[str, Any]:

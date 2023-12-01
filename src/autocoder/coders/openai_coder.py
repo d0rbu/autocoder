@@ -4,7 +4,7 @@ from warnings import warn
 from typing import Any, Set, Sequence, Type, Iterable, Literal, Mapping
 from abc import ABC
 from .coder import Coder
-from .prompt_utils import system_user_prompt, tool, assistant_prompt, user_prompt, code_writing_tools
+from .prompt_utils import system_user_prompt, tool, assistant_prompt, user_prompt, code_writing_tools, use_openai_tool
 from ..models.openai import OpenAIWrapper
 
 
@@ -110,7 +110,7 @@ class OpenAICoder(Coder, ABC):
             )
         ]
 
-        response = self.model(model_input=model_input, tools=tools, tool_choice="choose_subcoder")
+        response = self.model(model_input=model_input, tools=tools, tool_choice=use_openai_tool("choose_subcoder"))
 
         subcoder_name = response.choices[0].message.tool_calls[0].function.arguments.get("subcoder")
         subcoder_class = allowed_subcoders[subcoder_name]
@@ -134,7 +134,7 @@ class OpenAICoder(Coder, ABC):
                     "type": "object",
                     "properties": {
                         "code_is_complex": {
-                            "type": "bool",
+                            "type": "boolean",
                             "description": "Whether the code is too complex to be coded within thirty minutes in 1-3 files.",
                         },
                     },
@@ -143,5 +143,5 @@ class OpenAICoder(Coder, ABC):
             )
         ]
 
-        response = self.model(model_input=model_input, tools=tools, tool_choice="set_code_complexity")
+        response = self.model(model_input=model_input, tools=tools, tool_choice=use_openai_tool("set_code_complexity"))
         return response.choices[0].message.tool_calls[0].function.arguments.get("code_is_complex")

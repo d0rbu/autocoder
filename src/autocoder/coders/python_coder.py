@@ -6,7 +6,7 @@ from typing import Any, Type, Iterable, Set
 from ordered_set import OrderedSet
 from .coder import Coder
 from .openai_coder import OpenAICoder
-from .prompt_utils import system_user_prompt, system_prompt, assistant_prompt, user_prompt, tool, finish_tool, validate_openai_tool_usage
+from .prompt_utils import system_user_prompt, system_prompt, assistant_prompt, user_prompt, tool, finish_tool
 from .utils import get_exe_extension
 from ..tests.python_tests import PythonTests
 from ..tests.tests import Tests
@@ -103,7 +103,7 @@ class PythonOpenAICoder(OpenAICoder):
 
         modified_files = set()
         for _ in range(max_scaffolding_steps):
-            response = self.model(model_input=model_input, process_response_fn=validate_openai_tool_usage, tools=tools, tool_choice="auto")
+            response = self.model(model_input=model_input, tools=tools, tool_choice="auto")
             response_message = response.choices[0].message
             tool_calls = response_message.tool_calls
 
