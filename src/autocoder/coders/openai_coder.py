@@ -1,11 +1,12 @@
 import os
 import json
+import re
 from pathlib import Path
 from warnings import warn
 from typing import Any, Set, Sequence, Type, Iterable, Literal, Mapping
 from abc import ABC
 from .coder import Coder
-from .prompt_utils import system_user_prompt, tool, assistant_prompt, user_prompt, code_writing_tools, use_openai_tool
+from .prompt_utils import system_user_prompt, tool, assistant_prompt, user_prompt, use_openai_tool
 from .utils import DEFAULT_PERMISSIONS, parse_chat
 from ..models.openai import OpenAIWrapper
 
@@ -24,6 +25,9 @@ class OpenAICoder(Coder, ABC):
 
         self.model = OpenAIWrapper(key, organization, rate_limit_rpm, **default_config)
         self.project_home = project_home
+    
+
+    FINISH_KEYWORD = "finish"
 
     @property
     def default_config(self) -> dict[str, Any]:
@@ -36,23 +40,20 @@ class OpenAICoder(Coder, ABC):
         return {}
 
     def _write_code_loop(self, model_input: list[str], code_type: Literal["tests", "code"] = "code", max_responses: int = 5, overwrite_files: bool = True) -> None:
+        alphabetical_regex = re.compile(r"[^a-zA-Z]")
+
         modified_files = set()
         created_files = set()
         for _ in range(max_responses):
-            response = self.model(model_input=model_input, tools=code_writing_tools, tool_choice="auto")
+            response = self.model(model_input=model_input)
             response_message = response.choices[0].message
-            tool_calls = response_message.tool_calls
 
-            finished_writing_code = False
-
-            if tool_calls:
-                for tool_call in tool_calls:
-                    if tool_call.function.name == "finish":
-                        finished_writing_code = True
-                    else:
-                        warn(f"Unknown tool call: {tool_call}")
+            if not response_message.content:
+                continue
             
-            if finished_writing_code:
+            alphabetical_message = alphabetical_regex.sub("", response_message.content)  # Only keep alphabetical characters
+
+            if alphabetical_message.lower() == self.FINISH_KEYWORD:
                 break
 
             codeblocks = parse_chat(response_message.content)
