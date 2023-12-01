@@ -88,7 +88,7 @@ def tool(name: str, description: str, parameters: dict[str, Any]) -> dict[str, A
 
 select_file_tool = tool(
     name="select_file",
-    description="Select a file to write in. It may be a new file or an existing file. After the file is selected, simply reply with the code to be written in the file.",
+    description="Select a file to write in. It may be a new file or an existing file. After the file is selected, simply reply with the code to be written in the file. If a file is currently selected, do NOT select it again.",
     parameters={
         "type": "object",
         "properties": {

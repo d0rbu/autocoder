@@ -34,11 +34,11 @@ class OpenAICoder(Coder, ABC):
         """
         return {}
 
-    def _write_code_loop(self, model_input: list[str], code_type: Literal["tests", "code"] = "code", max_code_files: int = 5, overwrite_files: bool = True) -> None:
+    def _write_code_loop(self, model_input: list[str], code_type: Literal["tests", "code"] = "code", max_responses: int = 5, overwrite_files: bool = True) -> None:
         modified_files = set()
         created_files = set()
         current_file = None
-        for _ in range(max_code_files):
+        for _ in range(max_responses):
             response = self.model(model_input=model_input, tools=code_writing_tools, tool_choice="auto")
             response_message = response.choices[0].message
             tool_calls = response_message.tool_calls
@@ -52,6 +52,7 @@ class OpenAICoder(Coder, ABC):
                         current_file = tool_call.function.arguments.get("file")
                         if not os.path.exists(current_file):
                             created_files.add(current_file)
+                            modified_files.add(current_file)
                             Path(current_file).touch()
 
                         if not overwrite_files and current_file not in created_files:  # Don't overwrite existing files, but you can write to files that you created

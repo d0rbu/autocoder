@@ -119,6 +119,13 @@ class PythonOpenAICoder(OpenAICoder):
                         venv_path = os.path.join(self.project_home, ".venv")
                         if not os.path.exists(venv_path):
                             subprocess.run(["python", "-m", "venv", ".venv"], cwd=self.project_home, check=True)
+                        
+                        # Set permissions for all files/folders in directory
+                        for root, dirs, files in os.walk(self.project_home):
+                            for d in dirs:
+                                os.chmod(os.path.join(root, d), 0o770)
+                            for f in files:
+                                os.chmod(os.path.join(root, f), 0o770)
 
                         self.python_executable = os.path.join(self.project_home, ".venv", "Scripts", f"python{get_exe_extension()}")
                         subprocess.run([self.python_executable, "-m", "pip", "install", *self.STANDARD_LIBRARIES], cwd=self.project_home, check=True)
