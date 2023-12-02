@@ -163,3 +163,13 @@ class PythonOpenAICoder(OpenAICoder):
         model_input = system_user_prompt("You are an assistant that helps generate design documents. Your requirements are: \n1. Design a system that meets the following specification.\n2. You must use Python.\n3. You must specify all frameworks used. (e.g. This will be built in Django and will utilize OpenCV).\n4. Make sure to be extremely detailed.\n5. You will NOT write ANY explicit code.", specification)
         response = self.model(model_input=model_input)
         return response.choices[0].message.content
+    
+    READING_FROM_STDIN_STRING = "reading from stdin while output is captured!"
+    
+    def feedback_hook(self, test_results: Any) -> str:
+        stdin_error = self.READING_FROM_STDIN_STRING in test_results
+
+        if stdin_error:
+            return f"{test_results}\n\nConsider using `if __name__ == \"__main__\":` to prevent stdin errors from importing a module."
+        
+        return test_results
