@@ -44,7 +44,7 @@ class OpenAICoder(Coder, ABC):
 
         modified_files = set()
         created_files = set()
-        import pdb; pdb.set_trace()
+
         for _ in range(max_responses):
             response = self.model(model_input=model_input)
             response_message = response.choices[0].message

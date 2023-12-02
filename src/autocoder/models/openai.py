@@ -86,4 +86,6 @@ class OpenAIWrapper(ModelWrapper):
 
         response = self.client.chat.completions.create(messages=model_input, **generate_config)
 
+        print(response)
+
         return response

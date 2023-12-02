@@ -69,7 +69,6 @@ class Coder(ABC):
         print("Generating tests...")
         generated_tests = self.generate_tests(specification, touched_project_files, integration=should_generate_integration_tests)
         generated_tests += unit_tests
-        print(generated_tests)
 
         touched_test_files.update(generated_tests.test_files())
 
