@@ -2,7 +2,7 @@ import subprocess
 from typing import Sequence, Tuple, Any, Set
 from pathlib import Path
 import os
-from .tests import Tests
+from .tests import Tests, NoTests
 
 
 class PythonTests(Tests):
@@ -19,6 +19,9 @@ class PythonTests(Tests):
     def _combine(self, tests: Tests) -> Tests:
         if isinstance(tests, PythonTests):
             self.main_test_files |= tests.main_test_files
+            return self
+
+        if isinstance(tests, NoTests):
             return self
 
         self.other_tests.add(tests)

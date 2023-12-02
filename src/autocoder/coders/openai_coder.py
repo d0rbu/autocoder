@@ -89,7 +89,7 @@ class OpenAICoder(Coder, ABC):
                     with open(current_file, "w", encoding="utf-8") as f:
                         f.write(code)
 
-                    model_input.append(user_prompt(f"{path}\n```\n<{code_type}>```"))
+                    model_input.append(user_prompt(f"Wrote {code_type} into {path} successfully."))
                     modified_files.add(current_file)
         
         return modified_files

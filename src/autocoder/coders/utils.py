@@ -51,7 +51,7 @@ def parse_chat(chat: str) -> List[Tuple[str, str]]:
         path = match.group(1)
 
         # Check to see if it is a valid absolute or relative path
-        if not re.match(r"^(?:(?:\w:)?([\\\/][\w\d-_,. ]*)*)", path):
+        if not re.match(r"^(?:(?:\w:)?([\\\/][\w\d\-\_\,\.\ ]*)*)", path):
             continue
 
         # Remove leading and trailing brackets
