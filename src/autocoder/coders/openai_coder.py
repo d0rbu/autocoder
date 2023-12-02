@@ -64,7 +64,17 @@ class OpenAICoder(Coder, ABC):
                 model_input.append(user_prompt("NO!!! REMEMBER THE FORMAT:\n<path>\n```\n<code>```"))
 
             for path, code in codeblocks:
-                current_file = os.path.join(self.project_home, path)
+                # Check if we have an absolute path
+                if os.path.isabs(path):
+                    # Check if path is a child of the project home
+                    if not os.path.abspath(path).startswith(os.path.abspath(self.project_home)):
+                        model_input.append(user_prompt(f"Path {path} is not a child of the project home {self.project_home}."))
+                        continue
+
+                    current_file = path
+                else:
+                    current_file = os.path.join(self.project_home, path)
+
                 if not os.path.exists(current_file):
                     created_files.add(current_file)
                     modified_files.add(current_file)
