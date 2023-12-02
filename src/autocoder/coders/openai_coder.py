@@ -100,6 +100,7 @@ class OpenAICoder(Coder, ABC):
         return self._write_code_loop(model_input, overwrite_files=False)
 
     def _generate_tests(self, model_input: Sequence[Mapping[str, str]]) -> Set[os.PathLike]:
+        import pdb; pdb.set_trace()
         return self._write_code_loop(model_input, code_type="tests")
 
     _generate_unit_tests = _generate_tests
@@ -128,7 +129,8 @@ class OpenAICoder(Coder, ABC):
         response = self.model(model_input=model_input, tools=tools, tool_choice=use_openai_tool("choose_subcoder"))
 
         subcoder_name = response.choices[0].message.tool_calls[0].function.arguments.get("subcoder")
-        subcoder_class = allowed_subcoders[subcoder_name]
+        subcoder_idx = allowed_subcoders.index(subcoder_name)
+        subcoder_class = allowed_subcoders[subcoder_idx]
 
         return subcoder_class()
 

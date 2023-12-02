@@ -67,7 +67,6 @@ class Coder(ABC):
         # Generate first version of the tests
         # Purposely exclude existing unit tests if there are any, since we want to specifically generate integration tests.
         print("Generating tests...")
-        import pdb; pdb.set_trace()
         generated_tests = self.generate_tests(specification, touched_project_files, integration=should_generate_integration_tests)
         generated_tests += unit_tests
 
@@ -241,7 +240,7 @@ class Coder(ABC):
         codebase = self._read_files(files)
         
         model_input = [
-            system_prompt("You are an assistant that takes in a design specification, a codebase, and feedback from running automated tests. You must rewrite the codebase to match the specification and address feedback, if it needs to be rewritten. You must write the path of the file to write code into. The path can be either absolute or relative to the current working directory. Here are examples:\n\nsrc/main.py\n```\nprint(\"Hello, world!\")```\n\nC:\\Users\\henryc\\Documents\\GitHub\\project\\main.js\n```\nconsole.log(\"Hello, world!\")```\n\nPrevious code written will be shortened to <code> or truncated. When you are finished, simply respond with \"finish\", absolutely no other characters."),
+            system_prompt("You are an assistant that takes in a design specification, a codebase, and feedback from running automated tests. You must rewrite the codebase to match the specification and address feedback, if it needs to be rewritten. You must write the path of the file to write code into. The path can be either absolute or relative to the current working directory. Here are examples:\n\nsrc/main.py\n```\nprint(\"Hello, world!\")```\n\nC:\\Users\\henryc\\Documents\\GitHub\\project\\main.js\n```\nconsole.log(\"Hello, world!\")```\n\nPrevious code written will be shortened to <code> or truncated. DO NOT do this; you must write out full, valid code. When you are finished, simply respond with \"finish\", absolutely no other characters."),
             assistant_prompt("What is your specification?"),
             user_prompt(specification),
             assistant_prompt("What is your codebase?"),
@@ -267,7 +266,7 @@ class Coder(ABC):
     
     def _generate_code_prompt(self, code_design: str) -> Any:
         model_input = [
-            system_prompt("You are an coding assistant that takes in a design document and creates code that meets the design document. You must write the path of the file to write code into. The path can be either absolute or relative to the current working directory. Here are examples:\n\nsrc/main.py\n```\nprint(\"Hello, world!\")```\n\nC:\\Users\\henryc\\Documents\\GitHub\\project\\main.js\n```\nconsole.log(\"Hello, world!\");```. Previous code written will be shortened to <code> or truncated. When you are finished, simply respond with \"finish\", absolutely no other characters."),
+            system_prompt("You are an coding assistant that takes in a design document and creates code that meets the design document. You must write the path of the file to write code into. The path can be either absolute or relative to the current working directory. Here are examples:\n\nsrc/main.py\n```\nprint(\"Hello, world!\")```\n\nC:\\Users\\henryc\\Documents\\GitHub\\project\\main.js\n```\nconsole.log(\"Hello, world!\");```. Previous code written will be shortened to <code> or truncated. DO NOT do this; you must write out full, valid code. When you are finished, simply respond with \"finish\", absolutely no other characters."),
             assistant_prompt("What is your code design?"),
             user_prompt(code_design),
             assistant_prompt("What is the current working directory?"),
@@ -284,7 +283,7 @@ class Coder(ABC):
         existing_tests = self._read_files(existing_test_files)
 
         model_input = [
-            system_prompt(f"You are an assistant that takes in a design specification, a codebase, and a list of existing {test_type} tests. You must rewrite the existing {test_type} tests to match the specification, if they need to be rewritten. You must write the path of the file to write code into. The path can be either absolute or relative to the current working directory. Here are examples:\n\nsrc/main.py\n```\nprint(\"Hello, world!\")```\n\nC:\\Users\\henryc\\Documents\\GitHub\\project\\main.js\n```\nconsole.log(\"Hello, world!\");```. Previous tests written will be shortened to <tests> or truncated. When you are finished, simply respond with \"finish\", absolutely no other characters."),
+            system_prompt(f"You are an assistant that takes in a design specification, a codebase, and a list of existing {test_type} tests. You must rewrite the existing {test_type} tests to match the specification, if they need to be rewritten. You must write the path of the file to write code into. The path can be either absolute or relative to the current working directory. Here are examples:\n\nsrc/main.py\n```\nprint(\"Hello, world!\")```\n\nC:\\Users\\henryc\\Documents\\GitHub\\project\\main.js\n```\nconsole.log(\"Hello, world!\");```. Previous tests written will be shortened to <tests> or truncated. DO NOT do this; you must write out full, valid code. When you are finished, simply respond with \"finish\", absolutely no other characters."),
             assistant_prompt("What is your design specification?"),
             user_prompt(specification),
             assistant_prompt("What is your codebase?"),

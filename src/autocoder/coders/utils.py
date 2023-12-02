@@ -43,13 +43,16 @@ def parse_chat(chat: str) -> List[Tuple[str, str]]:
         List[Tuple[str, str]]: A list of (filename, codeblock) tuples.
     """
     # Get all ``` blocks and preceding filenames
-    regex = r"(\S+)\n?\s*```[^\n]*\n(.+?)\n*```"
+    regex = r"(\S+)\n?```[^\n]*\n(.+?)\n*```"
     matches = re.finditer(regex, chat, re.DOTALL)
 
     files = []
     for match in matches:
-        # Strip the filename of any non-allowed characters and convert / to \
         path = match.group(1)
+
+        # Check to see if it is a valid absolute or relative path
+        if not re.match(r"^(?:(?:\w:)?([\\\/][\w\d-_,. ]*)*)", path):
+            continue
 
         # Remove leading and trailing brackets
         path = re.sub(r"^\[(.*)\]$", r"\1", path)
