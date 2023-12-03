@@ -25,6 +25,14 @@ class OpenAICoder(Coder, ABC):
 
         self.model = OpenAIWrapper(key, organization, rate_limit_rpm, **default_config)
         self.project_home = project_home
+
+        self.init_kwargs = {
+            "key": key,
+            "organization": organization,
+            "project_home": project_home,
+            "rate_limit_rpm": rate_limit_rpm,
+            **default_generate_config,
+        }
     
 
     FINISH_KEYWORD = "finish"
@@ -147,7 +155,7 @@ class OpenAICoder(Coder, ABC):
             tool_choice=use_openai_tool("choose_subcoder")
         )
 
-        return subcoder_class()
+        return subcoder_class(**self.init_kwargs)
 
     def generate_dev_plan(self, code_design: str, max_tokens: int = 4096) -> Sequence[str]:
         model_input = system_user_prompt("You are an assistant that takes in a code design and creates a list of action items necessary to complete the task.  Your requirements are:\n1. You must return a JSON list of strings. (e.g. [\"item1\", \"item2\", \"item3\"])\n2. Each item should be clear and concise.", code_design)
