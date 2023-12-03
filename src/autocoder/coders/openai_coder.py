@@ -108,7 +108,6 @@ class OpenAICoder(Coder, ABC):
         return self._write_code_loop(model_input, overwrite_files=False)
 
     def _generate_tests(self, model_input: Sequence[Mapping[str, str]]) -> Set[os.PathLike]:
-        import pdb; pdb.set_trace()
         return self._write_code_loop(model_input, code_type="tests")
 
     _generate_unit_tests = _generate_tests
