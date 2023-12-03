@@ -42,7 +42,7 @@ class OpenAIWrapper(ModelWrapper):
         self.rate_limit_rpm = rate_limit_rpm  # rate limit is in requests per minute
         self.last_request_times = deque((0,), maxlen=self.rate_limit_rpm)
     
-    def process_response(self, response: str) -> str:
+    def process_response(self, response: ChatCompletion) -> str:
         return self.validate_tool_usage(response)
 
     @staticmethod

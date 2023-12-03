@@ -2,9 +2,9 @@ import os
 import json
 import re
 from pathlib import Path
-from warnings import warn
-from typing import Any, Set, Sequence, Type, Iterable, Literal, Mapping
+from typing import Any, Set, Sequence, Type, Iterable, Literal, Mapping, Callable
 from abc import ABC
+from openai.types.chat import ChatCompletion
 from .coder import Coder
 from .prompt_utils import system_user_prompt, tool, assistant_prompt, user_prompt, use_openai_tool
 from .utils import DEFAULT_PERMISSIONS, parse_chat, truncate_chat
@@ -106,7 +106,21 @@ class OpenAICoder(Coder, ABC):
     _generate_unit_tests = _generate_tests
     _generate_integration_tests = _generate_tests
 
+    def _process_subcoder_response(self, allowed_subcoders: Iterable[Type[Coder]]) -> Callable[[ChatCompletion], Type[Coder]]:
+        name_to_coder = {subcoder.__name__: subcoder for subcoder in allowed_subcoders}
+
+        def completion_to_subcoder(response: ChatCompletion) -> Type[Coder]:
+            response = OpenAIWrapper.validate_tool_usage(response)
+            tool_call = response.choices[0].message.tool_calls[0]
+            subcoder_name = tool_call.function.arguments.get("subcoder")
+
+            return name_to_coder[subcoder_name]
+
+        return completion_to_subcoder
+
+
     def _choose_subcoder(self, task: str, allowed_subcoders: Iterable[Type[Coder]]) -> Coder:
+        name_to_coder = {subcoder.__name__: subcoder for subcoder in allowed_subcoders}
         model_input = system_user_prompt("You are an assistant that must choose a subcoder to complete the following task.", task)
 
         tools = [
@@ -118,7 +132,7 @@ class OpenAICoder(Coder, ABC):
                     "properties": {
                         "subcoder": {
                             "type": "string",
-                            "enum": [subcoder.__name__ for subcoder in allowed_subcoders],
+                            "enum": list(name_to_coder.keys()),
                         },
                     },
                     "required": ["subcoder"],
@@ -126,11 +140,12 @@ class OpenAICoder(Coder, ABC):
             )
         ]
 
-        response = self.model(model_input=model_input, tools=tools, tool_choice=use_openai_tool("choose_subcoder"))
-
-        subcoder_name = response.choices[0].message.tool_calls[0].function.arguments.get("subcoder")
-        subcoder_idx = allowed_subcoders.index(subcoder_name)
-        subcoder_class = allowed_subcoders[subcoder_idx]
+        subcoder_class = self.model(
+            model_input=model_input,
+            process_response_fn=self._process_subcoder_response(allowed_subcoders),
+            tools=tools,
+            tool_choice=use_openai_tool("choose_subcoder")
+        )
 
         return subcoder_class()
 

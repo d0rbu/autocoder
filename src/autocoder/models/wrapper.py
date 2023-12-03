@@ -21,7 +21,7 @@ class ModelWrapper(ABC):
         self,
         model_input: Any,
         max_tries: int = 2,
-        process_response_fn: Callable[[str], str] | None = None,
+        process_response_fn: Callable[[Any], Any] | None = None,
         **kwargs,
     ) -> str:
         """
@@ -41,7 +41,7 @@ class ModelWrapper(ABC):
 
         for _ in range(max_tries):
             try:
-                generation: str = self.generate(model_input, **kwargs)
+                generation: Any = self.generate(model_input, **kwargs)
                 
                 return process_response_fn(generation)
             except Exception as e:
@@ -49,7 +49,7 @@ class ModelWrapper(ABC):
         
         raise RuntimeError("Failed to generate text.")
     
-    def process_response(self, response: str) -> str:
+    def process_response(self, response: Any) -> Any:
         """
         Process the response from the API.
 
@@ -57,7 +57,7 @@ class ModelWrapper(ABC):
             response: The response from the API.
         
         Returns:
-            str: The processed response.
+            Any: The processed response.
         """
         return response
     
