@@ -30,7 +30,7 @@ class PythonOpenAICoder(OpenAICoder):
             **default_generate_config,
         )
 
-        self.python_executable = python_executable
+        self.python_executable: os.PathLike = python_executable
 
     @property
     def default_config(self) -> dict[str, Any]:
@@ -69,7 +69,7 @@ class PythonOpenAICoder(OpenAICoder):
             assistant_prompt("What does the top level of your project look like?"),
             user_prompt(f"In the directory {project_home}:\n{top_level_project_files}"),
             assistant_prompt("Where is your python executable located? Is it in a virtual environment?"),
-            user_prompt(self.python_executable),
+            user_prompt(str(self.python_executable)),
             assistant_prompt("What dependencies are installed?"),
             user_prompt("\n".join(installed_dependencies)),
             assistant_prompt("I will only run function calls now. Entering project scaffolding mode..."),
@@ -112,7 +112,7 @@ class PythonOpenAICoder(OpenAICoder):
             if tool_calls:
                 for tool_call in tool_calls:
                     if tool_call.function.name == "initialize_pdm_project":
-                        subprocess.run(["pdm", "init", "-n", "--python", self.python_executable], cwd=self.project_home, check=True)
+                        subprocess.run(["pdm", "init", "-n", "--python", str(self.python_executable)], cwd=self.project_home, check=True)
                         for file in self.PDM_PROJECT_FILES:
                             modified_files.add(os.path.join(self.project_home, file))
 
@@ -127,8 +127,8 @@ class PythonOpenAICoder(OpenAICoder):
                             for f in files:
                                 os.chmod(os.path.join(root, f), DEFAULT_PERMISSIONS)
 
-                        self.python_executable = os.path.join(self.project_home, ".venv", "Scripts", f"python{get_exe_extension()}")
-                        subprocess.run([self.python_executable, "-m", "pip", "install", *self.STANDARD_LIBRARIES], cwd=self.project_home, check=True)
+                        self.python_executable: os.PathLike = os.path.join(self.project_home, ".venv", "Scripts", f"python{get_exe_extension()}")
+                        subprocess.run([str(self.python_executable), "-m", "pip", "install", *self.STANDARD_LIBRARIES], cwd=self.project_home, check=True)
 
                         model_input.append(assistant_prompt("Initialized pdm project and activated `.venv` virtual environment."))
                     elif tool_call.function.name == "pip_install":
@@ -138,7 +138,7 @@ class PythonOpenAICoder(OpenAICoder):
                             warn("No package specified for pip install.")
                             continue
 
-                        subprocess.run([self.python_executable, "-m", "pip", "install", package], cwd=self.project_home, check=True)
+                        subprocess.run([str(self.python_executable), "-m", "pip", "install", package], cwd=self.project_home, check=True)
 
                         model_input.append(assistant_prompt(f"I installed package `{package}`. I will not install this package again."))
                     elif tool_call.function.name == "finish":
@@ -154,7 +154,7 @@ class PythonOpenAICoder(OpenAICoder):
         return modified_files
 
     def _get_installed_dependencies(self) -> Set[str]:
-        command_output = subprocess.run([self.python_executable, "-m", "pip", "freeze"], capture_output=True, check=True)
+        command_output = subprocess.run([str(self.python_executable), "-m", "pip", "freeze"], capture_output=True, check=True)
         installed_dependencies = OrderedSet(command_output.stdout.decode("utf-8").strip().split("\n"))
 
         return installed_dependencies
