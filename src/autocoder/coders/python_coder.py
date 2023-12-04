@@ -128,7 +128,7 @@ class PythonOpenAICoder(OpenAICoder):
                                 os.chmod(os.path.join(root, f), DEFAULT_PERMISSIONS)
 
                         self.python_executable: os.PathLike = os.path.join(self.project_home, ".venv", "Scripts", f"python{get_exe_extension()}")
-                        subprocess.run([str(self.python_executable), "-m", "pip", "install", *self.STANDARD_LIBRARIES], cwd=self.project_home, check=True)
+                        subprocess.run([self.python_executable, "-m", "pip", "install", *self.STANDARD_LIBRARIES], cwd=self.project_home, check=True)
 
                         model_input.append(assistant_prompt("Initialized pdm project and activated `.venv` virtual environment."))
                     elif tool_call.function.name == "pip_install":
@@ -138,7 +138,7 @@ class PythonOpenAICoder(OpenAICoder):
                             warn("No package specified for pip install.")
                             continue
 
-                        subprocess.run([str(self.python_executable), "-m", "pip", "install", package], cwd=self.project_home, check=True)
+                        subprocess.run([self.python_executable, "-m", "pip", "install", package], cwd=self.project_home, check=True)
 
                         model_input.append(assistant_prompt(f"I installed package `{package}`. I will not install this package again."))
                     elif tool_call.function.name == "finish":
@@ -154,7 +154,7 @@ class PythonOpenAICoder(OpenAICoder):
         return modified_files
 
     def _get_installed_dependencies(self) -> Set[str]:
-        command_output = subprocess.run([str(self.python_executable), "-m", "pip", "freeze"], capture_output=True, check=True)
+        command_output = subprocess.run([self.python_executable, "-m", "pip", "freeze"], capture_output=True, check=True)
         installed_dependencies = OrderedSet(command_output.stdout.decode("utf-8").strip().split("\n"))
 
         return installed_dependencies
